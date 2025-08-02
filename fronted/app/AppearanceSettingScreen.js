@@ -67,18 +67,18 @@ const handleGenerateResult = async () => {
       imageBase64: imageBase64
     };
 
-    // 發送 POST 請求到後端
-    // const response = await fetch(endpoint, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(payload),      
-    // });
+    //發送 POST 請求到後端
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),      
+    });
 
-    // if (!response.ok) {
-    //   throw new Error('生成圖片失敗');
-    // }
+    if (!response.ok) {
+      throw new Error('生成圖片失敗');
+    }
 
-    // const result = await response.json();
+    const result = await response.json();
     
     // 再發送一個請求獲取 base64 格式的圖片
     const base64Response = await fetch('http://192.168.0.131:5000/get-image-base64');
@@ -202,18 +202,19 @@ const handleGenerateResult = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 30,
+    paddingTop: 40,
     paddingHorizontal: 25,
     backgroundColor: '#efe2d8',
     alignItems: 'center',
   },
   backButton: {
     position: 'absolute',
-    top: 20,
-    left: 20,
+    top: 40,
+    left: 15,
     padding: 8,
   },
   header: {
+    paddingTop: 30,
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 25,

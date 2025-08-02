@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import characterImage from '../assets/character.png';
+import Fontisto from '@expo/vector-icons/Fontisto';
 
 export default function MainScreen() {
   const navigation = useNavigation();
@@ -18,7 +20,7 @@ export default function MainScreen() {
 
       {/* 角色圖片 */}
       <Image
-        source={require('./assets/character.png')}
+        source={characterImage}
         style={styles.character}
       />
 
@@ -31,11 +33,16 @@ export default function MainScreen() {
 
       {/* 右側功能按鈕 */}
       <View style={styles.sideButtons}>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('MemoryStoreScreen')}>
           <Ionicons name="heart-outline" size={30} color="#555" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconButton}>
           <Ionicons name="help-circle-outline" size={30} color="#555" />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={() => navigation.navigate('Photo Upload')}>
+          <Fontisto name="photograph" size={30} color="#555" />
         </TouchableOpacity>
       </View>
 
@@ -98,7 +105,7 @@ const styles = StyleSheet.create({
   sideButtons: {
     position: 'absolute',
     right: 20,
-    top: 200,
+    top: 150,
   },
   iconButton: {
     marginVertical: 10,

@@ -16,13 +16,15 @@ import {
   Platform,
   Pressable,
   Text,
+  Modal,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { styles } from './style/chatscreenstyle';
+import { styles } from '../style/chatscreenstyle';
+import characterImage from '../assets/full_body.png';
 
 export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
@@ -39,6 +41,15 @@ export default function ChatScreen() {
   const recordingTimer = useRef(null);
   const [sound, setSound] = useState(null);
   const [playingUri, setPlayingUri] = useState(null);
+
+  const [saveModalVisible, setSaveModalVisible] = useState(false);
+  const [messageToSave, setMessageToSave] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const memoryCategories = [
+    { key: 'anniversary', icon: '❤️', title: '紀念日' },
+    { key: 'event', icon: '📅', title: '事件' },
+    { key: 'emotion', icon: '😄', title: '情緒' },
+  ];
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -293,12 +304,13 @@ export default function ChatScreen() {
   const onReply = (msg) => {
   setReplyingTo(msg);
   setLongPressedMessageIndex(null);
-};
-const onSave = (msg) => {
-  console.log('儲存', msg);
-  setLongPressedMessageIndex(null);
-};
-
+  };
+  const onSave = (msg) => {
+    console.log('儲存', msg);
+    setMessageToSave(msg);             // 儲存要記錄的訊息
+    setSaveModalVisible(true);      
+    setLongPressedMessageIndex(null);
+  };
 
 
   const renderMessage = ({ item, index }) => {
@@ -323,7 +335,7 @@ const onSave = (msg) => {
         <View style={{ width: 34, alignItems: 'flex-end' }}>
         {showAvatar ? (
           <Image
-          source={require('./assets/full_body.png')}
+          source={require('../assets/full_body.png')} 
           style={styles.avatar}
           />
         ) : (
@@ -418,7 +430,7 @@ const onSave = (msg) => {
         <View style={styles.inner}>
           {/* 區塊 1：上方標題區 */}
           <View style={styles.header}>
-            <Text type='subtitle'>boyfriend</Text>
+            <Text style={{ fontSize: 20, fontWeight: '600' }}>金珉奎</Text>
           </View>
 
           <TouchableOpacity
@@ -436,6 +448,7 @@ const onSave = (msg) => {
               renderItem={renderMessage}
               keyExtractor={(_, index) => index.toString()}
               contentContainerStyle={styles.chatContainer}
+              onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
               onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             />
           </View>
@@ -491,6 +504,15 @@ const onSave = (msg) => {
                 value={input}
                 onChangeText={setInput}
                 placeholder="輸入訊息"
+                returnKeyType="send"
+                onSubmitEditing={() => {
+                  if (recordedUri) {
+                    handleSendAudio();
+                  } else {
+                    handleSend();
+                  }
+                  Keyboard.dismiss();
+                }}
                 />
             )}
 
@@ -509,6 +531,107 @@ const onSave = (msg) => {
         </View>
         
       </TouchableWithoutFeedback>
+
+      <Modal visible={saveModalVisible} transparent animationType="fade">
+        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#00000099' }}>
+          <View style={{ margin: 20, backgroundColor: '#fff', padding: 20, borderRadius: 10 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>選擇記憶類別</Text>
+
+      {memoryCategories.map((cat) => (
+        <TouchableOpacity
+          key={cat.key}
+          style={{
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: '#eee',
+          }}
+
+        onPress={() => {
+          setSelectedCategory(cat.key);
+          setSaveModalVisible(false);
+
+          const now = new Date();
+          const event = {
+            key: Date.now().toString(),
+            time: now.getTime(), // 儲存 timestamp
+            date: `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`, // 顯示用
+            chatContent: messageToSave,
+          };
+          
+          // 找出 focus 的 index（確保是正確那一筆）
+          const focusIndex = messages.findIndex(
+            m =>
+              m.text === messageToSave?.text &&
+              m.time === messageToSave?.time &&
+              m.sender === messageToSave?.sender
+          );
+
+          // 取得前 4 則 context（只取文字訊息）
+          const contextMessages = messages.slice(Math.max(0, focusIndex - 4), focusIndex).filter(m => m.text);
+
+          // 傳送給 Flask 後端的 API
+          fetch('http://192.168.0.131:5000/generate_memory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              category: cat.title,                // 顯示用類別名稱：紀念日/事件/情緒
+              focus: messageToSave.text,         // 長按儲存的那句話
+              context: contextMessages.map(m => m.text), // 前四句
+              character_name: "金珉奎"
+            })
+          })
+            .then(async (res) => {
+              const text = await res.text();
+              try {
+                const json = JSON.parse(text);
+                console.log('✅ 標題產生成功：', json.title);
+
+                const updatedEvent = {
+                  ...event,
+                  title: json.title,
+                  focus: messageToSave.text,
+                };
+
+                navigation.navigate('MemoryDetail', {
+                  title:
+                    cat.key === 'anniversary'
+                      ? '紀念日'
+                      : cat.key === 'event'
+                      ? '事件'
+                      : '情緒',
+                  icon:
+                    cat.key === 'anniversary'
+                      ? '❤️'
+                      : cat.key === 'event'
+                      ? '📅'
+                      : '😄',
+                  event: updatedEvent,
+                  fromChat: true,
+                });
+              } catch (err) {
+                console.error('❌ 回傳非 JSON，實際內容如下：');
+                console.log(text);
+              }
+            })
+            .catch(err => {
+              console.error('❌ 記憶送出失敗', err);
+            });
+        }}
+      >
+            <Text style={{ fontSize: 16 }}>{cat.icon} {cat.title}</Text>
+          </TouchableOpacity>
+        ))}
+
+            <TouchableOpacity
+              style={{ marginTop: 15, alignSelf: 'flex-end' }}
+              onPress={() => setSaveModalVisible(false)}
+            >
+              <Text style={{ color: '#666' }}>取消</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+  
     </KeyboardAvoidingView>
     
    

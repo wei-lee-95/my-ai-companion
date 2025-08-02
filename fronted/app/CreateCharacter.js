@@ -7,9 +7,12 @@ import {
   TouchableWithoutFeedback,
   View,
   StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ScrollView } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export default function CreateCharacter() {
   const navigation = useNavigation();
@@ -39,8 +42,14 @@ export default function CreateCharacter() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: '#efe2d8' }} // 這裡設定背景色，避免彈出時是白的
+      contentContainerStyle={{...styles.container, alignItems: 'center'}}
+      enableOnAndroid={true}
+      extraScrollHeight={30} // 推高一點點就好，防止跳太高
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={{ width: '100%', alignItems: 'center' }}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>創建角色</Text>
         </View>
@@ -52,16 +61,17 @@ export default function CreateCharacter() {
           <Text style={styles.backButtonText}>≪</Text>
         </TouchableOpacity>
 
-        <Text style={{ marginBottom: 10, fontSize: 14, color: '#555' }}>
+        {/* 基本資訊 Tag */}
+        <Text style={{ marginBottom: 5, fontSize: 15, color: '#555' }}>
           性別: {gender || '未選擇'} | 關係: {relationship || '未選擇'} | 名字: {name || '未輸入'}
         </Text>
 
         {/* 形象設定 */}
+        <Text style={styles.sectionTitle}>外觀與聲音</Text>
+
         <TouchableOpacity
           style={styles.settingButton}
-          onPress={() => navigation.navigate('appearanceSettingScreen', {
-            gender: gender,
-          })}
+          onPress={() => navigation.navigate('AppearanceSettingScreen')}
         >
           <Text style={styles.plus}>＋</Text>
           <Text style={styles.buttonText}>形象設定</Text>
@@ -71,12 +81,12 @@ export default function CreateCharacter() {
         <TouchableOpacity
           style={styles.settingButton}
           onPress={() => {
-            setIsAudioReady(true);
-            setAudioFileName('角色名稱.mp3');
             navigation.navigate('VoiceSettingScreen', {
               name: name,
               gender: gender
             });
+            setIsAudioReady(true);
+            setAudioFileName('角色名稱.mp3');
           }}
         >
           <Text style={styles.plus}>＋</Text>
@@ -97,6 +107,7 @@ export default function CreateCharacter() {
         )}
 
         {/* 輸入職業／年齡 */}
+        <Text style={styles.sectionTitle}>基本資料</Text>
         <View style={styles.inputGroup}>
           <Text style={styles.placeholderText}>輸入職業</Text>
           <TextInput
@@ -116,7 +127,11 @@ export default function CreateCharacter() {
             keyboardType="numeric"
             placeholderTextColor="#d8cbbd"
           />
+        </View>
 
+          {/* 個性與喜好區 */}
+        <Text style={styles.sectionTitle}>角色特質</Text>
+        <View style={styles.inputGroup}>
           <Text style={styles.placeholderText}>輸入個性</Text>
           <TextInput
             style={styles.inputField}
@@ -143,7 +158,11 @@ export default function CreateCharacter() {
             placeholder="(如：直接、幽默) "
             placeholderTextColor="#d8cbbd"
           />
+        </View>
 
+        {/* 相遇與關係設定 */}
+        <Text style={styles.sectionTitle}>互動背景</Text>
+        <View style={styles.inputGroup}>
           <Text style={styles.placeholderText}>開始對話的場景</Text>
           <TextInput
             style={styles.inputField}
@@ -161,16 +180,16 @@ export default function CreateCharacter() {
             placeholder="(如：曖昧、普通朋友)"
             placeholderTextColor="#d8cbbd"
           />
-      </View>
+        </View>
 
         {/* 確認創建 */}
         <TouchableOpacity
           style={styles.confirmButton}
           onPress={() => {
-            // if (isAnyFieldEmpty()) {
-            //   alert('請填寫所有欄位');
-            //   return;
-            // }
+            if (isAnyFieldEmpty()) {
+              alert('請填寫所有欄位');
+              return;
+            }
             const characterData = {
               gender,
               relationship,
@@ -189,24 +208,21 @@ export default function CreateCharacter() {
         >
           <Text style={styles.confirmText}>確認創建</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </TouchableWithoutFeedback>
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 0,
+    paddingTop: 25,
     paddingBottom: 40,
     paddingHorizontal: 25,
     backgroundColor: '#efe2d8',
     alignItems: 'center',
   },
   titleContainer: {
-    flexDirection: 'row',
-    marginTop: 20,
-    justifyContent: 'center',
-    backgroundColor: '#efe2d8',
+    marginTop: 25,
   },
   title: {
     fontSize: 24,
@@ -217,8 +233,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 5,
-    left: 5,
+    top: 45,
+    left: 3,
     backgroundColor: '#000',
     borderRadius: 15,
     padding: 6,
@@ -228,15 +244,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fcf7ef',
   },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#444',
+    marginTop: 20,
+    marginBottom: 5,
+    alignSelf: 'flex-start',
+    paddingLeft: '3%',  
+  },
   settingButton: {
     backgroundColor: '#575853',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 15,
     width: '80%',
+    gap: 10,
   },
   plus: {
     fontSize: 30,
@@ -267,15 +294,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  inputRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
   inputGroup: {
-  marginTop: 50,
-  width: '90%',
-  alignItems: 'center',
+    marginTop: 10,
+    width: '90%',
+    alignItems: 'center',
   },
   inputField: {
     width: '100%',
@@ -288,28 +310,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     textAlign: 'center',
-  },
-  checkboxSection: {
-    marginTop: 20,
-    alignItems: 'center',
-    width: '80%',
-  },
-  freeTraitInput: {
-    borderWidth: 1,
-    borderColor: '#d8cbbd',
-    borderRadius: 15,
-    padding: 12,
-    backgroundColor: '#f9f9f9',
-    fontSize: 14,
-    color: '#333',
-    height: 100,
-    textAlignVertical: 'top',
-    width: '100%',
+    marginBottom: 13,
   },
   placeholderText: {
     fontSize: 20,
     color: '#555',
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: 2,
+    lineHeight: 30,
     textAlign: 'center',
   },
   confirmButton: {
@@ -318,7 +326,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 30,
+    marginTop: 15,
     paddingHorizontal: 45,
   },
   confirmText: {

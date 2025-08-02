@@ -43,6 +43,7 @@ export default function GenderRelationshipPicker() {
         extraScrollHeight={60}
         keyboardOpeningTime={Number.MAX_VALUE}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={true}
       >
         <View style={styles.titleContainer}>
           <Text style={styles.title}>
@@ -87,6 +88,8 @@ export default function GenderRelationshipPicker() {
             onChangeText={setName}
             placeholder="輸入名字"
             placeholderTextColor="#505050"
+            returnKeyType="done"
+            onSubmitEditing={Keyboard.dismiss}
           />
         </View>
 
@@ -118,15 +121,15 @@ export default function GenderRelationshipPicker() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 0,
+    marginTop: 15,
     paddingVertical: 24,
     paddingHorizontal: 25,
     backgroundColor: '#efe2d8',
   },
   titleContainer: {
     flexDirection: 'row',
-    marginTop: 15,
-    marginBottom: 40,
+    marginTop: 20,
+    marginBottom: 20,
     backgroundColor: '#efe2d8',
   },
   title: {
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
   },
   selectGroup: {
     width: '80%',
-    marginBottom: 40,
+    marginBottom: 20,
     alignItems: 'center',
   },
   pickerWrapper: {
@@ -155,7 +158,7 @@ const styles = StyleSheet.create({
   inputRow: {
     height: 55,
     width: 205,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   inputField: {
     borderWidth: 1,
@@ -174,8 +177,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     width: '70%',
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 15,
+    marginBottom: 35,
     gap: 30,
     alignItems: 'center',
   },

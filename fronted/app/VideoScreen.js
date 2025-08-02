@@ -1,39 +1,48 @@
 // VideoScreen.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Vibration, SafeAreaView } from 'react-native';
-import { Camera } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-console.log('Camera:', Camera);
-console.log('useNavigation:', useNavigation);
+import characterImage from '../assets/video-placeholder.png';
+import { Audio } from 'expo-av';
 
 export default function VideoScreen() {
-
-  const CameraType = {
-    front: 'front',
-    back: 'back',
-  };
-
   const navigation = useNavigation();
   const [seconds, setSeconds] = useState(0);
-  const [type, setType] = useState(CameraType.front);
-  const [hasPermission, setHasPermission] = useState(null);
-  const cameraRef = useRef(null);
 
   // 計時器每秒 +1
   useEffect(() => {
+    const startMicrophone = async () => {
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          alert('請授權麥克風使用權限');
+          return;
+        }
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          allowsRecordingAndroid: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          staysActiveInBackground: false,
+        });
+
+        console.log('麥克風啟動完成');
+
+        // 👉 如果你要開始錄音，可繼續寫錄音邏輯
+      } catch (error) {
+        console.error('啟動麥克風失敗', error);
+      }
+    };
+
+    startMicrophone();
+
     const timer = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
+    return () => clearInterval(timer);
   }, []);
 
   // 格式化為 mm:ss
@@ -49,16 +58,6 @@ export default function VideoScreen() {
       {/* 通話時間顯示 */}
       <Text style={styles.time}>通話時間：{formatTime(seconds)}</Text>
       {/* 模擬視訊畫面 */}
-      <Image
-        source={require('./assets/video-placeholder.png')}
-        style={styles.videoImage}
-      />
-
-      <Camera
-        ref={cameraRef}
-        style={styles.camera}
-        type={type}   // 把 type state 傳進去
-      />
 
       {/* 掛掉按鈕 */}
       <TouchableOpacity
@@ -68,6 +67,7 @@ export default function VideoScreen() {
           navigation.navigate('MainScreen');
         }}
       >
+
         <Ionicons name="call-outline" size={25} color="#fff" />
         <Text style={styles.hangupText}>掛掉</Text>
       </TouchableOpacity>
@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
     height: 750,
     resizeMode: 'contain',
   },
+
   hangupButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -106,6 +107,7 @@ const styles = StyleSheet.create({
     position: 'absolute',   // ✅ 讓它浮動定位
     bottom: 60,            // ✅ 距離畫面底部 140px（調大會更上面）
   },
+
   hangupText: {
     color: '#333',
     fontSize: 16,
@@ -128,5 +130,4 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 3,
     },
-
 });

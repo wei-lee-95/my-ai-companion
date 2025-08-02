@@ -35,7 +35,7 @@ export default function VoiceSettingScreen() {
   }, []);
 
   // ✅ 確認設定 → 呼叫後端產生音檔
-  const handleConfirm = async () => {
+  const handleGenerate = async () => {
     try {
       const formData = new FormData();
       formData.append('file', {
@@ -78,6 +78,10 @@ export default function VoiceSettingScreen() {
       console.error('生成錯誤：', error);
       alert('生成語音失敗');
   }};
+
+  const handleConfirm = () => {
+    navigation.goBack();
+  };
 
   // ✅ 播放按鈕（從後端取 base64 播放）
   const handlePlay = async () => {
@@ -133,12 +137,20 @@ export default function VoiceSettingScreen() {
       }
     } catch (error) {
       console.error('❌ 音檔選取錯誤:', error);
+      alert('選擇音檔失敗');
     }
   };
 
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.inner}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+      >
+        <Ionicons name="arrow-back" size={24} color="#333" />
+      </TouchableOpacity>
+
       <Text style={styles.header}>聲音設定</Text>
 
       <TouchableOpacity onPress={handlePickAndGo}>
@@ -182,9 +194,15 @@ export default function VoiceSettingScreen() {
         />
       </View>
 
-      <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-        <Text style={styles.confirmText}>確認設定</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>
+          <Text style={styles.confirmText}>開始生成</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+          <Text style={styles.confirmText}>確認設定</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -204,6 +222,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 20,
     padding: 10,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 15,
+    padding: 8,
   },
   plus: { fontSize: 36, color: '#a97C50' },
   cardText: { fontSize: 16, marginTop: 10, color: '#333' },
@@ -231,13 +255,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   slider: { width: '100%', height: 40 },
-  sliderLabel: { alignSelf: 'flex-start', marginTop: 10, fontSize: 14 },
+    sliderLabel: { alignSelf: 'flex-start', marginTop: 10, fontSize: 14 },
+    buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 40, // 👈 加這個
+    gap: 20,
+  },
+  generateButton: {
+    backgroundColor: '#888',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+  },
   confirmButton: {
     backgroundColor: '#a97C50',
-    marginTop: 30,
     paddingVertical: 12,
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
     borderRadius: 10,
   },
   confirmText: { color: '#fff', fontSize: 16 },
 });
+
