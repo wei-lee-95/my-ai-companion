@@ -1,0 +1,245 @@
+from flask_cors import CORS
+from flask import Flask, request, jsonify, send_from_directory, send_file
+from datetime import datetime
+import urllib.request
+import base64
+import json
+import time
+import os
+import numpy as np
+from PIL import Image
+
+webui_server_url = "http://192.168.0.131:7860"  #通常是7860
+
+openpose_image_path = './baseImage/openpose.png'
+
+BASE_DIR = os.path.dirname(__file__) 
+
+# 輸出的圖片存這裡
+out_dir = 'outputs'
+out_dir_t2i = os.path.join(out_dir, 'txt2img')
+#out_dir_i2i = os.path.join(out_dir, 'img2img')
+os.makedirs(out_dir_t2i, exist_ok=True)
+#os.makedirs(out_dir_i2i, exist_ok=True)
+
+rem_dir = os.path.join(BASE_DIR, 'outputs', 'removed')
+os.makedirs(rem_dir, exist_ok=True)
+
+def timestamp():
+    return datetime.fromtimestamp(time.time()).strftime("%Y%m%d-%H%M%S")
+
+def encode_file_to_base64(path):
+    with open(path, 'rb') as file:
+        return base64.b64encode(file.read()).decode('utf-8')
+
+def decode_and_save_base64(base64_str, save_path):
+    """解碼並保存 base64 圖片"""
+    try:
+        with open(save_path, "wb") as file:
+            file.write(base64.b64decode(base64_str))
+        return True
+    except Exception as e:
+        print(f"保存圖片時出錯: {e}")
+        return False
+
+def call_api(api_endpoint, **payload):
+    try:
+        data = json.dumps(payload).encode('utf-8')
+        request = urllib.request.Request(
+            f'{webui_server_url}/{api_endpoint}',
+            headers={'Content-Type': 'application/json'},
+            data=data,
+        )
+        
+        # 增加超時設置
+        response = urllib.request.urlopen(request, timeout=1000)  # 5分鐘超時
+        return json.loads(response.read().decode('utf-8'))
+    except urllib.error.URLError as e:
+        print(f"API 調用失敗: {str(e)}")
+        if hasattr(e, 'read'):
+            try:
+                error_details = e.read().decode('utf-8')
+                print(f"詳細錯誤: {error_details}")
+            except:
+                print("無法讀取詳細錯誤信息")
+        return None
+
+def call_txt2img_api(**payload):
+    try:
+        response = call_api('sdapi/v1/txt2img', **payload)
+        if not response:
+            return False
+        
+        success = False  # 追踪是否有任何圖片成功保存
+        for index, image in enumerate(response.get('images', [])):
+            save_path = os.path.join(out_dir_t2i, f'txt2img-{timestamp()}-{index}.png')
+            if decode_and_save_base64(image, save_path):
+                success = True  # 只要有一張圖片保存成功就設為 True
+        
+        return success
+    except Exception as e:
+        print(f"處理過程中出錯: {str(e)}")
+        return False
+
+def generate_with_faceid(face_image_base64, seed, prompt, negative_prompt):
+
+    """使用 IP-Adapter FaceID 生成圖片"""
+
+    payload = {
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "seed": seed,  # 隨機種子
+        "steps":20,
+        "width": 600,
+        "height": 768,
+        "cfg_scale": 7,
+        "sampler_name": "DPM++ 2M",
+        "scheduler": "Karras",
+        "n_iter": 1,
+        "batch_size": 1,
+        "denoising_strength": 0.7,
+        
+        "alwayson_scripts": {
+            "ControlNet": {
+                "args": [
+                    {
+                        "enabled": True,
+                        "model" : "ip-adapter-faceid-plusv2_sd15 [6e14fc1a]",
+                        "module" : "ip-adapter_face_id_plus",
+                        "weight": 1.6,
+                        "image": {
+                            "image": face_image_base64,
+                            "mask": None
+                        },
+                        "resize_mode": "Crop and Resize",
+                        "control_mode": "Balanced",
+                        "pixel_perfect": True,
+                        "processor_res": 576,
+                        "threshold_a": 0.5,
+                        "threshold_b": 0.5,
+                        "guidance_start": 0.0,
+                        "guidance_end": 0.9,
+                        "advanced_weighting": [1.6] * 16,  # 16個相同的權重值
+                        "save_detected_map": True
+                    },
+                    {
+                        "enabled" : True,
+                        "advanced_weighting" : None,
+                        "animatediff_batch" : False,
+                        "control_mode" : "Balanced",
+                        "effective_region_mask" : None,
+                        "guidance_end" : 1,
+                        "guidance_start" : 0,
+                        "hr_option" : "Both",
+                        "image" : {
+                            "image" : encode_file_to_base64(openpose_image_path),
+                            "mask" : None
+                        },
+                        "inpaint_crop_input_image" : False,
+                        "input_mode" : "simple",
+                        "ipadapter_input" : None,
+                        "is_ui" : True,
+                        "loopback" : False,
+                        "low_vram" : False,
+                        "mask" : None,
+                        "model" : "ControlNet OpenPose [fef5e48e]",
+                        "module" : "none",
+                        "output_dir" : "",
+                        "pixel_perfect" : False,
+                        "processor_res" : 512,
+                        "pulid_mode" : "Fidelity",
+                        "resize_mode" : "Crop and Resize",
+                        "save_detected_map" : True,
+                        "threshold_a" : 0.5,
+                        "threshold_b" : 0.5,
+                        "union_control_type" : "OpenPose",
+                        "weight" : 1.0
+                    },
+                ]
+            }
+        },
+    }
+
+    call_txt2img_api(**payload)
+    return "圖片生成完成！"
+
+def build_custom_prompt(outfit_style):
+
+    outfit_map = {
+        "original":"",
+        "casual": "casual t-shirt, denim jacket",
+        "formal": "<lora:formal-suit:0.7>",
+        "idol": "stage outfit, fashionable, trendy",
+    }
+
+    outfit_desc = outfit_map.get(outfit_style, "")
+
+    prompt = f"""
+    <lora:IP Adapter FaceID Plus v2:0.8>, <lora:EyesGen:0.3>,
+    masterpiece, best quality, 8k uhd, RAW photo,
+    1boy, solo, handsome young man,
+    (wide masculine face:1.5), (broad squared jawline:1.6), (horizontal jaw width:1.5),
+    (wide jaw angles:1.4), (strong jaw corners:1.4), (straight jaw bottom line:1.5),
+    (natural masculine features:1.4), (broad face structure:1.4),
+    (broad shoulders), (athletic build), (male anatomy),
+    (black eyes), (black short hair), (face ratio balance:1.2), (symmetrical face:1.2),
+    {outfit_desc},
+    pure white background    
+    """.strip()
+
+    negative_prompt = f"""
+    (worst quality, low quality),
+    (watermark, text, signature, blurry),
+    disgusting, amputation, bad hands, error, missing fingers, extra digit, fewer digits, cropped, normal quality, ugly, odd, bad hands, nudity ,red eye, naked
+    
+    """.strip()
+
+    return prompt, negative_prompt
+
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/generate-appearance-boy', methods=['POST'])
+def generate_appearance():
+    print("收到請求！")
+    data = request.get_json()
+    outfit_style = data.get('style')
+    image_base64 = data.get('imageBase64')
+    seed = -1
+
+    if not image_base64:
+        return jsonify({'error': '缺少圖片資料'}), 400
+
+    prompt = build_custom_prompt(outfit_style)
+    # 直接用 base64 字串，不用存檔
+    result = generate_with_faceid(image_base64, seed, prompt)
+
+    # 取得最新生成的圖片路徑
+    generated_images = sorted(os.listdir(out_dir_t2i), reverse=True)
+    if generated_images:
+        image_url = f'/outImages/txt2img/{sorted(generated_images, reverse=True)[2]}'
+        return jsonify({"message": "生成成功"})
+    else:
+        image_url = None
+        return jsonify({"error": "生成失敗"}), 500
+
+
+@app.route('/get-image-base64', methods=['GET'])
+def get_image_base64():
+    generated_images = sorted(os.listdir(out_dir_t2i), reverse=True)
+
+    if not generated_images:
+        return jsonify({"error": "沒有生成的圖片"}), 404
+    
+    image_path = os.path.join(BASE_DIR, out_dir_t2i, sorted(generated_images, reverse=True)[2])
+
+    try:
+        with open(image_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            return jsonify({
+                "image_base64": encoded,
+                "filename": image_path
+            })
+    except Exception as e:
+        return jsonify({"error": f"讀取圖片失敗: {str(e)}"}), 500
+
