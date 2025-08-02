@@ -5,6 +5,7 @@ from routes.VoiceApi import voice_bp
 from routes.ChatRoomApi import chatRoom_bp
 from routes.PhotoApi import photo_bp
 from routes.MemoryApi import memory_bp
+from routes.VideoApi import video_bp
 
 app = Flask(__name__)
 CORS(app)
@@ -14,6 +15,7 @@ app.register_blueprint(voice_bp)
 app.register_blueprint(chatRoom_bp)
 app.register_blueprint(photo_bp)
 app.register_blueprint(memory_bp)
+app.register_blueprint(video_bp)
 
 @app.route('/')
 def index():

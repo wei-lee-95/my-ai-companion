@@ -5,39 +5,39 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import characterImage from '../assets/video-placeholder.png';
 import { Audio } from 'expo-av';
-import useMicAutoRecorder from './useMicAutoRecorder';
-
+import MicMonitor from './MicMonitor'; 
 
 export default function VideoScreen() {
   const navigation = useNavigation();
   const [seconds, setSeconds] = useState(0);
 
-  const onFinish = async (uri) => {
-    const formData = new FormData();
-    formData.append('file', {
-      uri,
-      name: 'recording.m4a',
-      type: 'audio/m4a',
-    });
-
-    try {
-      const res = await fetch('http://192.168.0.131:5000/video_voice', {
-        method: 'POST',
-        body: formData,
-      });
-      const result = await res.json();
-      console.log("上傳成功", result);
-    } catch (error) {
-      console.error("上傳失敗", error);
-    }
-  };
-
-  // Hook 直接放外層
-  useMicAutoRecorder(onFinish);
-
   // 計時器每秒 +1
   useEffect(() => {
+    const startMicrophone = async () => {
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          alert('請授權麥克風使用權限');
+          return;
+        }
 
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          allowsRecordingAndroid: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          staysActiveInBackground: false,
+        });
+
+        console.log('麥克風啟動完成');
+
+        // 👉 如果你要開始錄音，可繼續寫錄音邏輯
+      } catch (error) {
+        console.error('啟動麥克風失敗', error);
+      }
+    };
+
+    startMicrophone();
 
     const timer = setInterval(() => {
       setSeconds((prev) => prev + 1);
@@ -60,6 +60,7 @@ export default function VideoScreen() {
       <Text style={styles.time}>通話時間：{formatTime(seconds)}</Text>
       {/* 模擬視訊畫面 */}
 
+      <MicMonitor />
 
       {/* 掛掉按鈕 */}
       <TouchableOpacity
