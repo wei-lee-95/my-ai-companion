@@ -7,6 +7,7 @@ import tempfile
 import subprocess
 import base64
 import whisper
+import logging
 
 # 載入 Whisper 模型
 model = whisper.load_model("small")  # 你可以換成 tiny, base, small, medium, large  # ✅medium效果最好 但在本地端要跑很久 需要GPU比較快
@@ -16,7 +17,7 @@ client = openai.OpenAI(api_key="sk-proj-MG2muN_vvbcYdrsz-zcQNq9xdBoTNZYi-iGUPNmu
 
 # 絕對路徑建立 chat_histories 資料夾
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat" "chat_histories")
+HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 os.makedirs(HISTORY_DIR, exist_ok=True)  # ✅ 確保資料夾存在
 
 # ====== Stats ======
@@ -56,6 +57,7 @@ def save_chat_history(character_name, messages):
 
 def load_profile(character_name):
     path = os.path.join(HISTORY_DIR, f"{character_name}_profile.json")
+    print(f"載入角色資料：{path}")
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -75,6 +77,8 @@ def generate_prompt(profile, stats):
 
 目前你的情緒是「{stats['mood']}」，你和使用者的親密度是 {stats['affection']}（0~100）。
 請根據這些狀態自然地調整你的語氣與互動行為。
+每次回覆不要超過四句話，傳過來的字跟話都要少一點。
+
 請你回覆正文後，附上 STATS 區塊如下：
 [STATS]
 {{

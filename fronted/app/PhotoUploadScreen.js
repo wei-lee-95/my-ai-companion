@@ -54,7 +54,7 @@ export default function PhotoUploadScreen() {
     formData.append('user_prompt', userPrompt);
 
     try {
-      const response = await fetch('http://172.20.10.4:5001/generate', {
+      const response = await fetch('http://192.168.0.131:5000/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',

@@ -7,8 +7,8 @@ voice_bp = Blueprint('voice', __name__)
 @voice_bp.route('/train-voice-model', methods=['POST'])
 def auto_create_rvc_model():
     
-    print("form 資料:", request.form)
-    print("files 資料:", request.files)
+    # print("form 資料:", request.form)
+    # print("files 資料:", request.files)
 
     form = request.form
     model_name = form.get("model_name")
