@@ -5,7 +5,7 @@ video_bp = Blueprint('video', __name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-@video_bp.route('/video_voice', methods=['POST'])
+@video_bp.route('/video-voice', methods=['POST'])
 def save_voice_file():
     
     print("form 資料:", request.form)

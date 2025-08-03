@@ -5,7 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import characterImage from '../assets/video-placeholder.png';
 import { Audio } from 'expo-av';
-import useMicAutoRecorder from './useMicAutoRecorder';
+import useMicAutoRecorder from '../hook/useMicAutoRecorder';
+import { API_ENDPOINTS } from '../../fronted/apiConfig'; 
 
 
 export default function VideoScreen() {
@@ -21,7 +22,7 @@ export default function VideoScreen() {
     });
 
     try {
-      const res = await fetch('http://192.168.0.131:5000/video_voice', {
+      const res = await fetch(API_ENDPOINTS.VIDEO_VOICE, {
         method: 'POST',
         body: formData,
       });

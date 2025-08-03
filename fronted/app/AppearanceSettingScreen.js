@@ -11,6 +11,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function AppearanceSettingScreen() {
   const navigation = useNavigation();
@@ -57,8 +58,8 @@ const handleGenerateResult = async () => {
   };
 
   const endpoint = gender === '男性' 
-    ? 'http://192.168.0.131:5000/generate-appearance-boy'
-    : 'http://192.168.0.131:5000/generate-appearance-girl';
+    ? API_ENDPOINTS.GENERATE_APPEARANCE_BOY
+    : API_ENDPOINTS.GENERATE_APPEARANCE_GIRL;
 
   try {
     // 準備要傳送的資料
@@ -81,7 +82,7 @@ const handleGenerateResult = async () => {
     const result = await response.json();
     
     // 再發送一個請求獲取 base64 格式的圖片
-    const base64Response = await fetch('http://192.168.0.131:5000/get-image-base64');
+    const base64Response = await fetch(API_ENDPOINTS.GET_IMAGE_BASE64);
     if (!base64Response.ok) {
       throw new Error('獲取 base64 圖片失敗');
     }

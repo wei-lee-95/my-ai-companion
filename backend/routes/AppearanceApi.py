@@ -3,7 +3,7 @@ from services.AppearanceGirlLogic import generate_with_faceid, build_custom_prom
 from rembg import remove
 from PIL import Image
 import base64, os
-import time
+import time 
 
 appearance_bp = Blueprint('appearance', __name__)
 

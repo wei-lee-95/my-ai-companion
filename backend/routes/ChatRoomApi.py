@@ -69,7 +69,7 @@ def chat():
     })
 
 #================上傳圖片======================== 
-@chatRoom_bp.route("/chat_image", methods=["POST"])
+@chatRoom_bp.route("/chat-image", methods=["POST"])
 def chat_image():
     # 假設前端用 JSON 傳 base64 字串: { "image_base64": "data:image/png;base64,...." }
     data = request.get_json()
@@ -141,7 +141,7 @@ def chat_image():
 
 
 #================語音訊息======================== 
-@chatRoom_bp.route("/chat_vocal", methods=["POST"])
+@chatRoom_bp.route("/chat-vocal", methods=["POST"])
 def chat_vocal():
 
     if "file" not in request.files:

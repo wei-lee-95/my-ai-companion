@@ -12,7 +12,7 @@ HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 
 client = openai.OpenAI(api_key="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") 
 
-@memory_bp.route("/generate_memory", methods=["POST"])
+@memory_bp.route("/generate-memory", methods=["POST"])
 def generate_memory():
     data = request.get_json()
     character_name = data.get("character_name", "未命名角色")

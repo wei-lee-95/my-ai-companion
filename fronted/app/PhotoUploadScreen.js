@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { API_ENDPOINTS } from '../../fronted/apiConfig'; 
 
 export default function PhotoUploadScreen() {
   const [image, setImage] = useState(null);
@@ -54,7 +55,7 @@ export default function PhotoUploadScreen() {
     formData.append('user_prompt', userPrompt);
 
     try {
-      const response = await fetch('http://192.168.0.131:5000/generate', {
+      const response = await fetch(API_ENDPOINTS.GENERATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',

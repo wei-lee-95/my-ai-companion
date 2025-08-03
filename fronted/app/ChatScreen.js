@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styles } from '../style/chatscreenstyle';
 import characterImage from '../assets/full_body.png';
+import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
@@ -62,7 +63,7 @@ export default function ChatScreen() {
     };
     setMessages(prev => [...prev, newMessage]);
 
-    fetch('http://192.168.0.131:5000/chat', {
+    fetch(API_ENDPOINTS.CHAT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input }),
@@ -107,7 +108,7 @@ export default function ChatScreen() {
       setMessages(prev => [...prev, { sender: 'user', imageUri, time: Date.now() }]);
 
       try {
-        const response = await fetch('http://192.168.0.131:5000/chat_image', {
+        const response = await fetch(API_ENDPOINTS.CHAT_IMAGE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image_base64: base64WithMime }),
@@ -227,7 +228,7 @@ export default function ChatScreen() {
       type: `audio/${fileType}`,
     } );
     try {
-      const response = await fetch('http://192.168.0.131:5000/chat_vocal', {
+      const response = await fetch(API_ENDPOINTS.CHAT_VOCAL, {
         method: 'POST',
         body: formData,
       });
@@ -570,7 +571,7 @@ export default function ChatScreen() {
           const contextMessages = messages.slice(Math.max(0, focusIndex - 4), focusIndex).filter(m => m.text);
 
           // 傳送給 Flask 後端的 API
-          fetch('http://192.168.0.131:5000/generate_memory', {
+          fetch(API_ENDPOINTS.GENERATE_MEMORY, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
