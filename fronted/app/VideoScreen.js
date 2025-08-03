@@ -1,7 +1,8 @@
 // VideoScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,  useCallback  } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Vibration, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import characterImage from '../assets/video-placeholder.png';
 import { Audio } from 'expo-av';
@@ -12,8 +13,15 @@ import { API_ENDPOINTS } from '../../fronted/apiConfig';
 export default function VideoScreen() {
   const navigation = useNavigation();
   const [seconds, setSeconds] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);  // 控制是否已經開始循環
 
   const onFinish = async (uri) => {
+    if (!uri) {
+      console.log("❌ 無有效錄音檔，跳過上傳");
+      start();
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', {
       uri,
@@ -27,14 +35,52 @@ export default function VideoScreen() {
         body: formData,
       });
       const result = await res.json();
+      const corrected = result.corrected_text;
       console.log("上傳成功", result);
+
+      const replyRes = await fetch(API_ENDPOINTS.VIDEO_RESPONSE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',  // 一定要加！
+        },
+        body: JSON.stringify({
+          text: corrected,
+        }),
+      });
+
+      const replyData = await replyRes.json();
+      console.log("小雲回覆:", replyData.reply);
+      
+      start();
+
+
     } catch (error) {
       console.error("上傳失敗", error);
+      start();
+      
     }
+    
   };
 
-  // Hook 直接放外層
-  useMicAutoRecorder(onFinish);
+  const { start, stop } = useMicAutoRecorder(onFinish);
+
+  // 👇 畫面進出時控制錄音啟動與停止
+  useFocusEffect(
+    useCallback(() => {
+      start(); // 畫面進來時開始錄音
+      return () => {
+        console.log("頁面離開，嘗試停止錄音...");
+        stop().then(() => console.log("錄音停止完成"));
+      };
+    }, [])
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 計時器每秒 +1
   useEffect(() => {

@@ -17,4 +17,5 @@ export const API_ENDPOINTS = {
 
     // VideoScreen
     VIDEO_VOICE: `${BASE_URL}/video-voice`,
+    VIDEO_RESPONSE: `${BASE_URL}/video-response`,
 };
