@@ -150,7 +150,6 @@ def initialize_chat():
     process_chat_response("小雲打了視訊電話給你，請主動開啟聊天，例如問問小雲怎麼突然打視訊電話。")
 
 def process_environment(image_path):
-  global latest_context
 
   initialize_resources()
 

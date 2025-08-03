@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
+import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function VoiceSettingScreen() {
   const route = useRoute();
@@ -48,7 +49,7 @@ export default function VoiceSettingScreen() {
       formData.append('pitch', pitch);
       formData.append('model_name', name);
 
-      const response = await fetch('http://192.168.0.131:5000/train-voice-model', {
+      const response = await fetch(API_ENDPOINTS.TRAIN_VOICE, {
         method: 'POST',
         headers: {},
         body: formData,
@@ -58,7 +59,7 @@ export default function VoiceSettingScreen() {
       console.log('訓練結果：', trainResult);
 
       if (trainResult.success) {
-        const generateRes = await fetch('http://192.168.0.131:5000/generate-voice', {
+        const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -86,7 +87,7 @@ export default function VoiceSettingScreen() {
   // ✅ 播放按鈕（從後端取 base64 播放）
   const handlePlay = async () => {
     try {
-      const response = await fetch('http://192.168.0.131:5000/get-audio-base64');
+      const response = await fetch(API_ENDPOINTS.GET_AUDIO_BASE64);
       const data = await response.json();
 
       if (data.audio_base64) {

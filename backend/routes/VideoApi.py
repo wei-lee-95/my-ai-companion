@@ -3,7 +3,8 @@ import os, base64, logging, traceback
 import whisper
 import tempfile
 import openai
-from services.VideoLogic import process_chat_response, initialize_resources
+import uuid
+from services.VideoLogic import process_chat_response, initialize_resources, process_environment
 
 # 初始化 OpenAI client（填入你的 API 金鑰）
 client = openai.OpenAI(api_key="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")  # ✅ 替換為你的金鑰
@@ -59,6 +60,31 @@ def save_voice_file():
         print(f"❌ 錯誤: {str(e)}")
         traceback.print_exc()
         return {"error": str(e)}, 500
+
+@video_bp.route('/video-photo', methods=['POST'])
+def anallyze_photo():
+    try:
+        # ⬇️ 讀取上傳的圖片
+        file = request.files['file']
+        if not file:
+            return {'error': '缺少圖片'}, 400
+
+        # ⬇️ 生成唯一檔名 + 儲存路徑
+        filename = f"{uuid.uuid4().hex}.jpg"
+        image_path = os.path.join("/tmp", filename)
+        file.save(image_path)
+
+        # ⬇️ 呼叫你的分析主函式
+        result = process_environment(image_path)
+
+        # ⬇️ 可選：刪除暫存圖片
+        os.remove(image_path)
+
+        return result if result else {'has_update': False}, 200
+
+    except Exception as e:
+        print(f"❌ 處理失敗: {str(e)}")
+        return {'error': '處理失敗'}, 500
 
 
 @video_bp.route('/video-response', methods=['POST'])

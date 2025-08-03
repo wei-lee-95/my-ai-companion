@@ -8,6 +8,7 @@ import characterImage from '../assets/video-placeholder.png';
 import { Audio } from 'expo-av';
 import useMicAutoRecorder from '../hook/useMicAutoRecorder';
 import { API_ENDPOINTS } from '../../fronted/apiConfig'; 
+import * as FileSystem from 'expo-file-system';
 
 
 export default function VideoScreen() {
@@ -25,8 +26,8 @@ export default function VideoScreen() {
     const formData = new FormData();
     formData.append('file', {
       uri,
-      name: 'recording.m4a',
-      type: 'audio/m4a',
+      name: 'recording.wav',
+      type: 'audio/wav',
     });
 
     try {
@@ -49,9 +50,49 @@ export default function VideoScreen() {
       });
 
       const replyData = await replyRes.json();
-      console.log("小雲回覆:", replyData.reply);
+      console.log("Mingyu 回覆:", replyData.reply);
+
+      const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: replyData.reply,
+          rate: 0,
+          pitch: 0,
+          model_name: "Mingyu",
+        })
+      });
+
+      const voiceResult = await generateRes.json();
       
-      start();
+      console.log("語音已生成:", voiceResult.voice_url);
+
+      const base64Audio = voiceResult.audio_base64;
+
+      if (base64Audio) {
+        const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
+        await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: fileUri },
+          { shouldPlay: true }
+        );
+
+        console.log("✅ 播放中:", fileUri);
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            console.log("✅ 播放結束，開始錄音");
+            start();  // 這裡放錄音開始
+            sound.unloadAsync(); // 釋放音訊資源
+          }
+        });
+      } else {
+        console.warn("⚠️ 沒有取得 audio_base64");
+      }
 
 
     } catch (error) {
