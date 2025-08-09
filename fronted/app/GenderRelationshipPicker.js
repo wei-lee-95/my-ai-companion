@@ -14,6 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useNavigation } from '@react-navigation/native';
 
 export default function GenderRelationshipPicker() {
+
   const [gender, setGender] = useState('');
   const [relationship, setRelationship] = useState('');
   const [name, setName] = useState('');

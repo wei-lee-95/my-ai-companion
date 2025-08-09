@@ -1,10 +1,10 @@
 [
   {
     "role": "user",
-    "content": "\"ighty obtained soybean\" （看到小雲） （表情：confused）"
+    "content": "「好痛好痛」 （看到小雲） （表情：extreme negative）"
   },
   {
     "role": "assistant",
-    "content": "嘿，小雲，你在想什麼呀？\"ighty obtained soybean\" 是什麼意思？我有點搞不清楚！我們可以一起討論啊！"
+    "content": "小雲！怎麼了？哪裡痛？我可以幫你嗎？不要擔心，我會照顧你的！"
   }
 ]

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Video } from 'expo-av';
 
 import useMicAutoRecorder from '../hook/useMicAutoRecorder';
 import { API_ENDPOINTS } from '../../fronted/apiConfig';
@@ -14,6 +15,10 @@ import characterImage from '../assets/video-placeholder.png';
 export default function VideoScreen() {
   const navigation = useNavigation();
   const [seconds, setSeconds] = useState(0);
+  const videoRef = useRef(null);
+  const [videoUri, setVideoUri] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({});
 
   // --- 相機狀態 ---
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -23,20 +28,38 @@ export default function VideoScreen() {
   const [camPermission, requestCamPermission] = useCameraPermissions();
 
   const takeSnapshot = async () => {
-  if (cameraRef.current) {
-    const photo = await cameraRef.current.takePictureAsync({
-      quality: 0.5,
-      base64: true
-    });
-    console.log('拍照成功：');
-    return photo;
-  }
-  return null;
-};
+    if (cameraRef.current) {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.5,
+        base64: true
+      });
+      console.log('拍照成功：');
+      return photo;
+    }
+    return null;
+  };
+
+  // 影片播放結束時呼叫
+  const onPlaybackStatusUpdate = async (status) => {
+    if (status.didJustFinish) {
+      setVideoUri(null);  // 回到圖片
+      start();            // 影片播完後重新開始錄音循環
+    }
+  };
+
+  // 儲存 base64 影片檔案
+  const saveVideoBase64ToFile = async (base64) => {
+    const fileUri = FileSystem.cacheDirectory + 'generated_video.mp4';
+    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+    return fileUri;
+  };
 
   // --- 錄音循環：沿用原本流程 ---
   const onFinish = async (uri) => {
-    if (!uri) { start(); return; }
+    if (!uri) { 
+      start(); 
+      return; 
+    }
 
     try {
       const photo = await takeSnapshot();
@@ -57,6 +80,7 @@ export default function VideoScreen() {
         return await res.json(); // 回傳 corrected_text
       };
 
+      // 上傳圖片
       const uploadImage = async () => {
         if (!photo) return;
         const imgData = new FormData();
@@ -78,8 +102,9 @@ export default function VideoScreen() {
         uploadImage()
       ]);
 
-      print(uploadImageResult);
+      console.log('uploadImageResult:', uploadImageResult);
 
+      // 取得聊天回覆
       const replyRes = await fetch(API_ENDPOINTS.VIDEO_RESPONSE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,8 +114,9 @@ export default function VideoScreen() {
         }),
       });
       const replyData = await replyRes.json();
-      print('回覆內容：', replyData.reply);
+      console.log('回覆內容：', replyData.reply);
 
+      // 產生語音
       const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,19 +124,92 @@ export default function VideoScreen() {
       });
 
       const voiceResult = await generateRes.json();
-
       const base64Audio = voiceResult.audio_base64;
-      if (base64Audio) {
-        const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
-        await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
 
-        const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.didJustFinish) { start(); sound.unloadAsync(); }
+      const imageFile = {
+        uri: Image.resolveAssetSource(characterImage).uri,
+        name: 'video-placeholder.png',
+        type: 'image/png',
+      };
+
+      async function saveBase64AudioToFile(base64Audio) {
+        const fileUri = FileSystem.cacheDirectory + 'voice.wav';
+        await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
+          encoding: FileSystem.EncodingType.Base64,
         });
+        return fileUri;
+      }
+
+      // 產生影片
+      async function generateLipSync(audioFileUri, characterImageFile) {
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('audio', {
+          uri: audioFileUri,
+          name: 'voice.wav',
+          type: 'audio/wav',
+        });
+        formData.append('image', {
+          uri: characterImageFile.uri,
+          name: characterImageFile.name,
+          type: characterImageFile.type,
+        });
+
+        try {
+          const res = await fetch("https://17d6b30999f0.ngrok-free.app/generate-lip-sync", {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!res.ok) {
+            console.error('影片生成失敗', await res.text());
+            setLoading(false);
+            return null;
+          }
+          
+          const json = await res.json();
+          const videoBase64 = json.video_base64;
+          const videoFileUri = await saveVideoBase64ToFile(videoBase64);
+          console.log('影片生成成功:', videoFileUri);
+          setLoading(false);
+          return videoFileUri;
+          
+        } catch (err) {
+          console.error('generateLipSync 錯誤:', err);
+          setLoading(false);
+          return null;
+        }
+      }
+
+      if (base64Audio) {
+        const audioFileUri = await saveBase64AudioToFile(base64Audio);
+
+        // 先生成影片
+        const videoFileUri = await generateLipSync(audioFileUri, imageFile);
+
+        if (videoFileUri) {
+          setVideoUri(videoFileUri);
+          // 影片開始播放，onPlaybackStatusUpdate 會處理結束事件
+        } else {
+          // 影片產生失敗，繼續下一輪錄音
+          start();
+        }
+
+        // 播放語音音檔（可選）
+        // const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
+        // await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
+        // const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
+        // sound.setOnPlaybackStatusUpdate(async (status) => {
+        //   if (status.didJustFinish) { 
+        //     sound.unloadAsync();
+        //   }
+        // });
+
       } else {
+        // 沒有語音資料，直接下一輪錄音
         start();
       }
+
     } catch (e) {
       console.error('錄音/回覆流程錯誤：', e);
       start();
@@ -140,7 +239,6 @@ export default function VideoScreen() {
       if (!granted) { Alert.alert('需要相機權限', '請到系統設定開啟相機權限'); return; }
     }
     setIsCameraOn((prev) => !prev);
-    // 若正在顯示相機為大方格，關閉相機時切回圖片為大方格
     setPipPrimary((prev) => (prev === 'camera' ? 'image' : prev));
     Vibration.vibrate(50);
   }, [camPermission, requestCamPermission]);
@@ -154,7 +252,7 @@ export default function VideoScreen() {
 
   // 右下角小方格點擊互換（相機 ↔ 圖片）
   const swapPip = useCallback(() => {
-    if (!isCameraOn) return;  // 相機關閉時不互換
+    if (!isCameraOn) return;
     setPipPrimary((prev) => (prev === 'image' ? 'camera' : 'image'));
     Vibration.vibrate(30);
   }, [isCameraOn]);
@@ -172,15 +270,26 @@ export default function VideoScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* 上方時間（更靠上） */}
+        {/* 上方時間 */}
         <Text style={styles.time}>通話時間：{formatTime(seconds)}</Text>
 
-        {/* 視訊區：背景是圖片；單一 CameraView 用樣式切換大小格 */}
+        {/* 視訊區 */}
         <View style={styles.videoArea}>
-          {/* 大方格：圖片（背景鋪滿） */}
-          <Image source={characterImage} style={styles.mainImage} />
+          {videoUri ? (
+            <Video
+              key={videoUri}
+              ref={videoRef}
+              source={{ uri: videoUri }}
+              style={styles.mainImage}
+              resizeMode="cover"
+              shouldPlay
+              onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+            />
+          ) : (
+            <Image source={characterImage} style={styles.mainImage} />
+          )}
 
-          {/* 單一 CameraView：不要卸載，避免閃爍 */}
+          {/* CameraView */}
           {isCameraOn && (
             <CameraView
               ref={cameraRef}
@@ -192,16 +301,15 @@ export default function VideoScreen() {
             />
           )}
 
-          {/* 右下角小方格：點擊互換 */}
+          {/* 小方格 */}
           <TouchableOpacity style={styles.pipTouch} activeOpacity={0.85} onPress={swapPip}>
-            {/* 如果大方格是相機，小方格顯示圖片；反之顯示灰底（因為相機已在小格） */}
             {pipPrimary === 'camera' ? (
               <Image source={characterImage} style={styles.pipImage} />
             ) : null}
           </TouchableOpacity>
         </View>
 
-        {/* 底部三顆按鈕（更靠下，只有圖示） */}
+        {/* 底部三顆按鈕 */}
         <TouchableOpacity style={styles.hangupButton} onPress={hangUp}>
           <Ionicons name="call-outline" size={35} color="#fff" />
         </TouchableOpacity>
@@ -224,11 +332,11 @@ export default function VideoScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#f4DDD0' },
-  container: { flex: 1, alignItems: 'center',   justifyContent: 'flex-start', paddingTop: 40, },              // 👈 自行微調 0~48 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 40 },
 
   time: {
     position: 'absolute',
-    top: 8, // 往上
+    top: 8,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -242,16 +350,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
   },
 
-  // 背景圖片（大方格）
   mainImage: { width: '100%', height: '100%', resizeMode: 'cover' },
 
-  // 單一 CameraView 的共同樣式：絕對定位在 videoArea
   cameraBase: { position: 'absolute', zIndex: 1 },
 
-  // 當相機是大方格（鋪滿）
   cameraMain: { top: 0, left: 0, right: 0, bottom: 0 },
 
-  // 當相機是小方格（右下角）
   cameraPip: {
     bottom: 10,
     right: 10,
@@ -261,7 +365,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // 小方格的點擊區（固定在右下角）
   pipTouch: {
     position: 'absolute',
     bottom: 10,
@@ -273,9 +376,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   pipImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  pipPlaceholder: { flex: 1, backgroundColor: '#888' },
 
-  // 底部三顆按鈕（靠下）
   hangupButton: {
     position: 'absolute',
     bottom: 20,
