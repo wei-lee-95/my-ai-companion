@@ -34,13 +34,17 @@ def extract_stats(reply_text):
         print(f"⚠️ STATS 解析錯誤: {str(e)}")
         return None
 
-def process_chat_response(user_input, context=None):
+def process_chat_response(user_input, context):
     """處理聊天回應（含後端角色資料與 context 資訊）"""
-    global messages
+    
 
     messages = []
 
     character_name = "金珉奎"  # ex: chat_histories/mingyu_profile.json
+
+    print("user_input type:", type(user_input), user_input)
+    print("context type:", type(context), context)
+    print("messages type:", type(messages), messages)
 
     # 載入角色資料
     profile = load_profile(character_name)
@@ -127,12 +131,18 @@ def process_chat_response(user_input, context=None):
 
 def initialize_resources():
     """初始化所有資源"""
-    global model, FMD, Behaviour_model, client, messages
+    global model, FMD, Behaviour_model, client
+
+    # YOLO 模型路徑
+    yolo_path = os.path.join(BASE_DIR, "assets", "Video", "yolov8n-oiv7.pt")
+    
+    # 表情模型路徑
+    emotion_model_path = os.path.join(BASE_DIR, "assets", "Video", "emotion_model.pkl")
         
     # 載入 YOLO 模型
     print("\n⌛ 正在載入 YOLO 模型...")
     try:
-        model = YOLO("yolov8n-oiv7.pt")
+        model = YOLO(yolo_path)
         model.conf = 0.1
         print("✅ YOLO 模型載入成功")
     except Exception as e:
@@ -141,7 +151,7 @@ def initialize_resources():
         
     # 載入其他模型
     FMD = FaceMeshDetector()
-    with open('emotion_model.pkl', 'rb') as f:
+    with open(emotion_model_path, 'rb') as f:
         Behaviour_model = pickle.load(f)
 
 def initialize_chat():

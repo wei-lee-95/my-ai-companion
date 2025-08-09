@@ -91,11 +91,13 @@ def anallyze_photo():
 def process_video_response():
     try:
         data = request.get_json()
-        if not data or 'text' not in data:
+        if not data:
             return {"error": "缺少文字內容"}, 400
 
-        user_text = data['text']
-        response = process_chat_response(user_text, context=None)
+        voice_result = data.get('voice')  # 你從前端傳過來的錄音結果
+        image_result = data.get('image')  # 你從前端傳過來的圖片辨識結果
+
+        response = process_chat_response(voice_result, image_result)
 
         return response  # 這裡 response 已經是 jsonify 格式（從 service 傳回的）
     
