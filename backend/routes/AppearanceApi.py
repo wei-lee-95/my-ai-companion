@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.AppearanceGirlLogic import generate_with_faceid, build_custom_prompt
+from services.ExpressionLogic import generate_emotions
 from rembg import remove
 from PIL import Image
 import base64, os
@@ -106,3 +107,56 @@ def get_image_base64():
             })
     except Exception as e:
         return jsonify({"error": f"讀取圖片失敗: {str(e)}"}), 500
+    
+
+@appearance_bp.route('/generate-emotion', methods=['POST'])
+def generate_emotion():
+    data = request.get_json()
+    user_name = data.get("username")
+    character_name = data.get("character_name")
+
+    if not user_name or not character_name:
+        return jsonify({"error": "缺少使用者或角色名稱"}), 400
+
+    try:
+        generate_emotions(user_name, character_name)
+        return jsonify({"message": "表情生成成功"}), 200
+    except FileNotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"error": f"發生錯誤：{str(e)}"}), 500
+    
+
+
+@appearance_bp.route('/generate-avatar', methods=['POST'])
+def generate_appearance():
+    data = request.get_json()
+    user_name = data.get("user_name")
+    role_name = data.get("role_name")
+    
+    removed_bg_path = os.path.join(rem_dir, "removed_background.png")
+    avatar_dir = os.path.join(BASE_DIR, "outputs", "avatar")
+    os.makedirs(avatar_dir, exist_ok=True)
+
+    if not os.path.exists(removed_bg_path):
+        return jsonify({"error": "沒有生成的圖片"}), 404
+
+    img = Image.open(removed_bg_path)
+
+    # 固定裁切框（針對 600×768）
+    left = 75
+    upper = 0
+    right = 525
+    lower = 450
+
+    cropped = img.crop((left, upper, right, lower))
+    avatar = cropped.resize((512, 512), Image.LANCZOS)
+
+    avatar_filename = f"{user_name}_{role_name}_avatar.png"
+    avatar_path = os.path.join(avatar_dir, avatar_filename)
+    avatar.save(avatar_path, format="PNG")
+
+    return jsonify({
+        "message": "avatar generated and avatar saved",
+        "avatar_path": avatar_path
+    })
