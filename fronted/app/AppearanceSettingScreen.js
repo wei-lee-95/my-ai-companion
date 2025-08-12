@@ -59,7 +59,7 @@ const handleGenerateResult = async () => {
 
   const endpoint = gender === '男性' 
     ? API_ENDPOINTS.GENERATE_APPEARANCE_BOY
-    : API_ENDPOINTS.GENERATE_APPEARANCE_GIRL;
+    : API_ENDPOINTS.GENERATE_APPEARANCE_BOY;
 
   try {
     // 準備要傳送的資料

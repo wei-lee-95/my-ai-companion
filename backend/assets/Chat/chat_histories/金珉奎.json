@@ -1,10 +1,10 @@
 [
   {
     "role": "user",
-    "content": "「好痛好痛」 （看到小雲） （表情：extreme negative）"
+    "content": "你今天要做什麼？ （看到小雲） （表情：extreme negative）"
   },
   {
     "role": "assistant",
-    "content": "小雲！怎麼了？哪裡痛？我可以幫你嗎？不要擔心，我會照顧你的！"
+    "content": "小雲，你怎麼了？看起來不太好。要不要我幫你做些什麼？我可以煮你最愛的料理！"
   }
 ]

@@ -12,6 +12,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
 import { API_ENDPOINTS } from '../../fronted/apiConfig';
+import * as FileSystem from 'expo-file-system';
 
 export default function VoiceSettingScreen() {
   const route = useRoute();
@@ -23,6 +24,7 @@ export default function VoiceSettingScreen() {
   const [uploadedFileUri, setUploadedFileUri] = useState(null);
   const [sound, setSound] = useState(null);
   const navigation = useNavigation();
+  const [generatedBase64, setGeneratedBase64] = useState(null);
 
   // ✅ 初始化音訊模式（for iOS 靜音）
   useEffect(() => {
@@ -73,45 +75,41 @@ export default function VoiceSettingScreen() {
         });
         const generateResult = await generateRes.json();
         console.log('生成語音成功：', generateResult);
-        alert('語音生成完成，請點擊播放試聽');
-    }
-  }catch (error) {
+        if (generateResult.audio_base64) {
+          setGeneratedBase64(generateResult.audio_base64);
+          alert('語音生成完成，開始播放...');
+          await handlePlay(generateResult.audio_base64);  // 播放生成音檔
+        } else {
+          alert('生成音檔失敗，無法播放');
+        }
+      }
+    } catch (error) {
       console.error('生成錯誤：', error);
       alert('生成語音失敗');
-  }};
+    }
+  };
 
   const handleConfirm = () => {
     navigation.goBack();
   };
 
   // ✅ 播放按鈕（從後端取 base64 播放）
-  const handlePlay = async () => {
+  const handlePlay = async (base64Audio) => {
+    console.log('播放用 Base64 長度:', base64Audio.length);
+    console.log('類型:', typeof base64Audio);
     try {
-      const response = await fetch(API_ENDPOINTS.GET_AUDIO_BASE64);
-      const data = await response.json();
+      const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
+      await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
 
-      if (data.audio_base64) {
-        console.log('base64 長度：', data.audio_base64.length);
+      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
 
-        const uri = `data:audio/wav;base64,${data.audio_base64}`;
-        const { sound, status } = await Audio.Sound.createAsync(
-          { uri },
-          { shouldPlay: true }
-        );
-
-        setSound(sound);
-
-        if (status.isLoaded) {
-          console.log('播放成功，音訊已載入');
-        } else {
-          console.warn('音訊未成功載入');
+      sound.setOnPlaybackStatusUpdate(status => {
+        if (status.didJustFinish) {
+          sound.unloadAsync();
         }
-      } else {
-        alert('找不到音檔');
-      }
+      });
     } catch (error) {
-      console.error('播放錯誤：', error);
-      alert('播放失敗');
+      console.error("播放失敗", error);
     }
   };
 
@@ -169,7 +167,16 @@ export default function VoiceSettingScreen() {
 
       <View style={styles.cardBox}>
         <Text style={styles.cardTitle}>最終聲音確認 & 調整</Text>
-        <TouchableOpacity onPress={handlePlay} style={styles.finalRow}>
+        <TouchableOpacity
+          onPress={() => {
+            if (generatedBase64) {
+              handlePlay(generatedBase64);
+            } else {
+              alert('請先生成語音');
+            }
+          }}
+          style={styles.finalRow}
+        >
           <Ionicons name="play" size={24} color="black" />
           <Text style={{ marginLeft: 10 }}>🎵 播放語音</Text>
         </TouchableOpacity>

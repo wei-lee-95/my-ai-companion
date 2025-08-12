@@ -120,7 +120,7 @@ export default function VideoScreen() {
       const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "Mingyu" }),
+        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "金珉奎" }),
       });
 
       const voiceResult = await generateRes.json();
@@ -156,7 +156,7 @@ export default function VideoScreen() {
         });
 
         try {
-          const res = await fetch("https://17d6b30999f0.ngrok-free.app/generate-lip-sync", {
+          const res = await fetch(API_ENDPOINTS.VIDEO_LIP_SYNC, {
             method: 'POST',
             body: formData,
           });
