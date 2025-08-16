@@ -3,7 +3,7 @@ import base64
 import os
 import shutil
 import time
-
+from rembg import remove
 
 EXPRESSION_CONFIGS = {
     "開心": {"aaa": -10, "blink": 0, "eee": 0, "eyebrow": 0, "smile": 1.3, "woo": 0},
@@ -17,19 +17,25 @@ API_KEY = "SG_079a62025c687848"
 API_URL = "https://api.segmind.com/v1/expression-editor"
 HEADERS = {'x-api-key': API_KEY}
 
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend
+input_path = os.path.join(BASE_DIR,"outputs/removed/removed_background_boy.png")
+input_path = os.path.abspath(input_path)
+
 def image_file_to_base64(image_path):
     with open(image_path, 'rb') as f:
         return base64.b64encode(f.read()).decode('utf-8')
 
 def generate_emotions(user_name, character_name):
     
-    input_path = f"backend/outputs/removed/{user_name}_{character_name}.png"
+    # input_path = f"backend/outputs/removed/removed_background_boy.png"
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"找不到圖片：{input_path}")
 
     base_image_b64 = image_file_to_base64(input_path)
 
-    output_folder = f"backend/outputs/emotion/{user_name}_{character_name}"
+    output_folder = os.path.join(BASE_DIR, "outputs/emotion", f"{user_name}_{character_name}")
     os.makedirs(output_folder, exist_ok=True)
 
     # ✅ 複製中立圖片
@@ -63,6 +69,14 @@ def generate_emotions(user_name, character_name):
             with open(output_path, "wb") as f:
                 f.write(response.content)
             print(f"✅ 已儲存：{output_path}")
+
+            # ✅ 去背生成的表情圖片
+            with open(output_path, "rb") as f:
+                removed_data = remove(f.read())
+            with open(output_path, "wb") as f:
+                f.write(removed_data)
+            print(f"去背後檔案: {output_path}")
+
         else:
             print(f"⚠️ 錯誤：{emotion}")
             print("Status Code:", response.status_code)

@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system';
 import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function AppearanceSettingScreen() {
+  const VIDEO_API_URL = "https://14b32f898e24.ngrok-free.app";
   const navigation = useNavigation();
   const route = useRoute();
   const {gender} = route.params || {};
@@ -93,6 +94,45 @@ const handleGenerateResult = async () => {
     setImageUri(`data:image/png;base64,${base64Result.image_base64}`);
     setGeneratedResult(true);
     setStyleLocked(true);
+
+        // ✅ 成功生成外觀後，自動呼叫 generate-emotion
+    const emotionPayload = {
+      userId: "test1",      // 你前端保存的使用者名稱
+      character_name: "金珉奎", // 角色名稱
+    };
+
+    const emotionResponse = await fetch(API_ENDPOINTS.GENERATE_EMOTION, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(emotionPayload),
+    });
+
+    if (!emotionResponse.ok) {
+      throw new Error('生成表情失敗');
+    }
+
+    const emotionResult = await emotionResponse.json();
+    console.log('生成表情結果:', emotionResult);
+
+    const videoPayload = {
+    username: "test1",
+    character_name: "金珉奎",
+    colab_url: VIDEO_API_URL
+  };
+
+  const videoResponse = await fetch(API_ENDPOINTS.GENERATE_VIDEO, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(videoPayload),
+  });
+
+  if (!videoResponse.ok) {
+    throw new Error('影片生成失敗');
+  }
+
+  const videoResult = await videoResponse.json();
+  console.log('影片生成結果:', videoResult);
+
 
   } catch (error) {
     console.error('生成失敗:', error);

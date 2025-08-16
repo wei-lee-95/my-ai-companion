@@ -1,5 +1,3 @@
-from flask_cors import CORS
-from flask import Flask, request, jsonify, send_from_directory, send_file
 from datetime import datetime
 import urllib.request
 import base64
@@ -81,7 +79,7 @@ def call_txt2img_api(**payload):
         print(f"處理過程中出錯: {str(e)}")
         return False
 
-def generate_with_faceid(face_image_base64, seed, prompt, negative_prompt):
+def generate_with_faceid_boy(face_image_base64, seed, prompt, negative_prompt):
 
     """使用 IP-Adapter FaceID 生成圖片"""
 
@@ -163,7 +161,7 @@ def generate_with_faceid(face_image_base64, seed, prompt, negative_prompt):
     call_txt2img_api(**payload)
     return "圖片生成完成！"
 
-def build_custom_prompt(outfit_style):
+def build_custom_prompt_boy(outfit_style):
 
     outfit_map = {
         "original":"",
@@ -195,51 +193,3 @@ def build_custom_prompt(outfit_style):
     """.strip()
 
     return prompt, negative_prompt
-
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/generate-appearance-boy', methods=['POST'])
-def generate_appearance():
-    print("收到請求！")
-    data = request.get_json()
-    outfit_style = data.get('style')
-    image_base64 = data.get('imageBase64')
-    seed = -1
-
-    if not image_base64:
-        return jsonify({'error': '缺少圖片資料'}), 400
-
-    prompt = build_custom_prompt(outfit_style)
-    # 直接用 base64 字串，不用存檔
-    result = generate_with_faceid(image_base64, seed, prompt)
-
-    # 取得最新生成的圖片路徑
-    generated_images = sorted(os.listdir(out_dir_t2i), reverse=True)
-    if generated_images:
-        image_url = f'/outImages/txt2img/{sorted(generated_images, reverse=True)[2]}'
-        return jsonify({"message": "生成成功"})
-    else:
-        image_url = None
-        return jsonify({"error": "生成失敗"}), 500
-
-
-@app.route('/get-image-base64', methods=['GET'])
-def get_image_base64():
-    generated_images = sorted(os.listdir(out_dir_t2i), reverse=True)
-
-    if not generated_images:
-        return jsonify({"error": "沒有生成的圖片"}), 404
-    
-    image_path = os.path.join(BASE_DIR, out_dir_t2i, sorted(generated_images, reverse=True)[2])
-
-    try:
-        with open(image_path, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode("utf-8")
-            return jsonify({
-                "image_base64": encoded,
-                "filename": image_path
-            })
-    except Exception as e:
-        return jsonify({"error": f"讀取圖片失敗: {str(e)}"}), 500
-

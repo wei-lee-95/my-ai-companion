@@ -6,11 +6,14 @@ export const API_ENDPOINTS = {
     // AppearanceScreen
     GENERATE_APPEARANCE_BOY: `${BASE_URL}/generate-appearance-boy`,
     GENERATE_APPEARANCE_GIRL: `${BASE_URL}/generate-appearance-girl`,
+    GENERATE_EMOTION: `${BASE_URL}/generate-emotion`,
+    GENERATE_VIDEO: `${BASE_URL}/generate-video`,
     GET_IMAGE_BASE64: `${BASE_URL}/get-image-base64`,
+
 
     // VoiceSettingScreen
     TRAIN_VOICE: `${VOICE_API_URL}/train-voice-model`,
-    GENERATE_VOICE: `${VOICE_API_URL}/generate-voice`,
+    GENERATE_VOICE: `${BASE_URL}/generate-voice`,
     GET_AUDIO_BASE64: `${BASE_URL}/get-audio-base64`,
 
     // ChatScreen

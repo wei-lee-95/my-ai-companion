@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from services.AppearanceGirlLogic import generate_with_faceid, build_custom_prompt
+from services.AppearanceBoyLogic import generate_with_faceid_boy, build_custom_prompt_boy
 from services.ExpressionLogic import generate_emotions
+from services.GenerateVideoLogic import generate_videos
 from rembg import remove
 from PIL import Image
 import base64, os
@@ -62,9 +64,9 @@ def generate_appearance_boy():
     if not image_base64:
         return jsonify({'error': '缺少圖片資料'}), 400
 
-    prompt, negative_prompt = build_custom_prompt(outfit_style)
+    prompt, negative_prompt = build_custom_prompt_boy(outfit_style)
     # 直接用 base64 字串，不用存檔
-    result = generate_with_faceid(image_base64, seed, prompt, negative_prompt)
+    result = generate_with_faceid_boy(image_base64, seed, prompt, negative_prompt)
 
     # 取得最新生成的圖片路徑
     generated_images = sorted(os.listdir(out_dir_t2i), reverse=True)
@@ -92,7 +94,7 @@ def generate_appearance_boy():
 @appearance_bp.route('/get-image-base64', methods=['GET'])
 def get_image_base64():
     time.sleep(5)
-    image_filename = 'removed_background.png'
+    image_filename = 'removed_background_boy.png'
     image_path = os.path.join(rem_dir, image_filename)
 
     if not os.path.exists(image_path):
@@ -112,7 +114,7 @@ def get_image_base64():
 @appearance_bp.route('/generate-emotion', methods=['POST'])
 def generate_emotion():
     data = request.get_json()
-    user_name = data.get("username")
+    user_name = data.get("userId")
     character_name = data.get("character_name")
 
     if not user_name or not character_name:
@@ -128,35 +130,19 @@ def generate_emotion():
     
 
 
-@appearance_bp.route('/generate-avatar', methods=['POST'])
-def generate_appearance():
-    data = request.get_json()
-    user_name = data.get("user_name")
-    role_name = data.get("role_name")
+@appearance_bp.route('/generate-video', methods=['POST'])
+def generate_video_route():
     
-    removed_bg_path = os.path.join(rem_dir, "removed_background.png")
-    avatar_dir = os.path.join(BASE_DIR, "outputs", "avatar")
-    os.makedirs(avatar_dir, exist_ok=True)
+    data = request.get_json()
+    username = data.get("username")
+    character_name = data.get("character_name")
+    colab_url = data.get("colab_url")
 
-    if not os.path.exists(removed_bg_path):
-        return jsonify({"error": "沒有生成的圖片"}), 404
+    if not username or not character_name or not colab_url:
+        return jsonify({"error": "缺少 username、character_name 或 colab_url"}), 400
 
-    img = Image.open(removed_bg_path)
-
-    # 固定裁切框（針對 600×768）
-    left = 75
-    upper = 0
-    right = 525
-    lower = 450
-
-    cropped = img.crop((left, upper, right, lower))
-    avatar = cropped.resize((512, 512), Image.LANCZOS)
-
-    avatar_filename = f"{user_name}_{role_name}_avatar.png"
-    avatar_path = os.path.join(avatar_dir, avatar_filename)
-    avatar.save(avatar_path, format="PNG")
-
-    return jsonify({
-        "message": "avatar generated and avatar saved",
-        "avatar_path": avatar_path
-    })
+    try:
+        results = generate_videos(username, character_name, colab_url)
+        return jsonify({"results": results})
+    except Exception as e:
+        return jsonify({"error": f"影片生成失敗: {str(e)}"}), 500

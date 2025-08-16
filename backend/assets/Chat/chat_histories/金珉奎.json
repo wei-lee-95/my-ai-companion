@@ -1,3 +1,10 @@
-[
-
-]
+{
+  "user": {
+    "role": "user",
+    "content": "你好，您好。"
+  },
+  "assistant": {
+    "role": "assistant",
+    "content": "嗨，小雲！怎麼了？你看起來不太開心，是發生什麼事了嗎？我可以幫你嗎？"
+  }
+}
