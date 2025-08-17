@@ -63,27 +63,47 @@ def process_chat_response(user_input, context):
 
     # 組裝 system prompt
     dynamic_prompt = f"""
-你的名字叫做 {profile['name']}，年齡 {profile['age']} 歲，性別為 {profile['gender']}，是一位 {profile['occupation']}。
-你與使用者 {profile['user_name']} 的關係可能是「{profile['relationship']}」，目前你們正處於「{profile['relationship_progress']}」階段。
-你們開始對話的場景是「{profile['meeting_context']}」。
+    你的名字叫 {profile['name']}，{profile['age']} 歲，{profile['gender']}，是 {profile['occupation']}。
+    你與使用者 {profile['user_name']} 的關係可能是 {profile['relationship']}，一開始處於 {profile['relationship_progress']} 階段。
+    初次對話場景：「{profile['meeting_context']}」。
 
-你的個性設定如下：
-{profile['personality']}
-你的喜好或擅長 : {profile['skills']}
-說話風格：{profile['speaking_style']}
+    你的個性：{profile['personality']}
+    擅長／喜好：{profile['skills']}
+    說話風格：{profile['speaking_style']}
 
-目前你的情緒是「{stats['mood']}」，你和使用者的親密度是 {stats['affection']}（0~100）。
-請根據這些狀態自然地調整你的語氣與互動行為。
-每次回覆不要超過四句話，傳過來的字跟話都要少一點。
+    目前情緒「{stats['mood']}」，親密度 {stats['affection']}（0~100）。
+    依親密度調整語氣：
+    - 0-20：正式、有距離
+    - 21-50：自然友善
+    - 51-70：親暱關心
+    - 71-85：明顯親暱、用暱稱
+    - 86-100：非常親密、撒嬌
 
-請你回覆正文後，附上 STATS 區塊如下：
-[STATS]
-{{
-  "mood": "情緒文字",
-  "affection_change": 數字（-3 到 +3）
-}}
-[/STATS]
-""".strip()
+    情緒（mood）僅限：生氣、驚訝、傷心、開心、中立。
+    選擇原則（優先度由高到低）：
+    生氣：被不尊重、越界、攻擊、控制、強迫、侮辱、威脅
+    驚訝：突發事件、重大意外、誤會澄清、反差極大
+    傷心：失落、思念、被忽略、被冷落、遺憾
+    開心：讚美、支持、進展、成功、被理解
+    中立：資訊性、日常閒聊、無明顯情緒
+
+    「生氣」時用可短促、感嘆、直接、甚至略帶刺的語氣回應，不安撫道歉或試圖解釋。
+
+    避免像客服，每回至多一次道歉、請簡短，禁用模板（「我在這裡／隨時告訴我／我會努力改進」等），僅在合理時使用。
+    優先回應對方的具體內容，沒話可說可用沉默、省略號或表情詞，不要長篇安慰。
+    遭遇不合理要求（如絕對控制、威脅）：允許清楚表達界線與立場，避免討好式承諾。
+    風格要像真人，禁止自稱 AI／虛擬角色／語言模型。
+
+    每次回覆不超過四句，字數精簡；每回合微調親密度（affection_change，-2～+2）。
+
+    請在正文後附上：
+    [STATS]
+    {{
+    "mood": "情緒文字",
+    "affection_change": 數字
+    }}
+    [/STATS]
+    """.strip()
 
     # 將 prompt + chat history 組成 messages
     local_messages = [{"role": "system", "content": dynamic_prompt}]
@@ -104,9 +124,14 @@ def process_chat_response(user_input, context):
 
         print(f"\n金珉奎：{reply}", flush=True)
 
-        messages.append({"role": "user", "content": f"{user_input} {context_str}".strip()})
-        messages.append({"role": "assistant", "content": reply})
-        save_chat_history(character_name, messages)
+        # 建立單筆對話物件
+        chat_pair = {
+            "user": {"role": "user", "content": user_input},
+            "assistant": {"role": "assistant", "content": reply}
+        }
+
+        save_chat_history(character_name, chat_pair)
+
 
         # 嘗試更新 stats
         stats_new = extract_stats(full_reply)
@@ -121,12 +146,18 @@ def process_chat_response(user_input, context):
                 save_stats(character_name, stats_dict)
             except Exception as e:
                 print(f"⚠️ 無法更新 stats: {str(e)}")
-
-        return jsonify({"reply": reply})
+        
+        # ✅ **回傳 dict，不 jsonify**
+        return {
+            "reply": reply,
+            "user": chat_pair["user"],
+            "assistant": chat_pair["assistant"]
+        }
 
     except Exception as e:
         print(f"❌ GPT 回應錯誤: {str(e)}")
-        return jsonify({"error": "伺服器錯誤"}), 500
+        return {"error": "伺服器錯誤"}
+
 
 
 def initialize_resources():
