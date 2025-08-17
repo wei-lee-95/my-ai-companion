@@ -120,7 +120,7 @@ export default function VideoScreen() {
       const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "金珉奎" }),
+        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "Mingyu" }),
       });
 
       const voiceResult = await generateRes.json();
@@ -141,41 +141,77 @@ export default function VideoScreen() {
       }
 
       // 產生影片
-      async function generateLipSync(audioFileUri, characterImageFile) {
+      // async function generateLipSync(audioFileUri, characterImageFile) {
+      //   setLoading(true);
+      //   const formData = new FormData();
+      //   formData.append('audio', {
+      //     uri: audioFileUri,
+      //     name: 'voice.wav',
+      //     type: 'audio/wav',
+      //   });
+      //   formData.append('image', {
+      //     uri: characterImageFile.uri,
+      //     name: characterImageFile.name,
+      //     type: characterImageFile.type,
+      //   });
+
+      //   try {
+      //     const res = await fetch(API_ENDPOINTS.VIDEO_LIP_SYNC, {
+      //       method: 'POST',
+      //       body: formData,
+      //     });
+
+      //     if (!res.ok) {
+      //       console.error('影片生成失敗', await res.text());
+      //       setLoading(false);
+      //       return null;
+      //     }
+          
+      //     const json = await res.json();
+      //     const videoBase64 = json.video_base64;
+      //     const videoFileUri = await saveVideoBase64ToFile(videoBase64);
+      //     console.log('影片生成成功:', videoFileUri);
+      //     setLoading(false);
+      //     return videoFileUri;
+          
+      //   } catch (err) {
+      //     console.error('generateLipSync 錯誤:', err);
+      //     setLoading(false);
+      //     return null;
+      //   }
+      // }
+
+      async function fetchNoLipSyncVideo(replyText) {
         setLoading(true);
-        const formData = new FormData();
-        formData.append('audio', {
-          uri: audioFileUri,
-          name: 'voice.wav',
-          type: 'audio/wav',
-        });
-        formData.append('image', {
-          uri: characterImageFile.uri,
-          name: characterImageFile.name,
-          type: characterImageFile.type,
-        });
 
         try {
-          const res = await fetch(API_ENDPOINTS.VIDEO_LIP_SYNC, {
-            method: 'POST',
-            body: formData,
+          const res = await fetch(API_ENDPOINTS.VIDEO_NO_LIP_SYNC, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ reply: replyText }),
           });
 
           if (!res.ok) {
-            console.error('影片生成失敗', await res.text());
+            console.error("取得影片失敗", await res.text());
             setLoading(false);
             return null;
           }
-          
+
           const json = await res.json();
           const videoBase64 = json.video_base64;
+          const mood = json.mood;
+          const reply = json.reply;
+            
           const videoFileUri = await saveVideoBase64ToFile(videoBase64);
-          console.log('影片生成成功:', videoFileUri);
+
+          console.log("影片取得成功:", videoFileUri, "心情:", mood, "回覆:", reply);
           setLoading(false);
+
           return videoFileUri;
-          
         } catch (err) {
-          console.error('generateLipSync 錯誤:', err);
+          console.error("fetchNoLipSyncVideo 錯誤:", err);
           setLoading(false);
           return null;
         }
@@ -185,7 +221,8 @@ export default function VideoScreen() {
         const audioFileUri = await saveBase64AudioToFile(base64Audio);
 
         // 先生成影片
-        const videoFileUri = await generateLipSync(audioFileUri, imageFile);
+        const videoFileUri = await fetchNoLipSyncVideo(replyData.reply);
+        //const videoFileUri = await generateLipSync(audioFileUri, imageFile);
 
         if (videoFileUri) {
           setVideoUri(videoFileUri);
@@ -196,14 +233,14 @@ export default function VideoScreen() {
         }
 
         // 播放語音音檔（可選）
-        // const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
-        // await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
-        // const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
-        // sound.setOnPlaybackStatusUpdate(async (status) => {
-        //   if (status.didJustFinish) { 
-        //     sound.unloadAsync();
-        //   }
-        // });
+        const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
+        await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
+        const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
+        sound.setOnPlaybackStatusUpdate(async (status) => {
+          if (status.didJustFinish) { 
+            sound.unloadAsync();
+          }
+        });
 
       } else {
         // 沒有語音資料，直接下一輪錄音

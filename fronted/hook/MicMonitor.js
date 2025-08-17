@@ -5,7 +5,7 @@ import SoundLevel from 'react-native-sound-level';
 
 export default function MicMonitor() {
   const belowThresholdSeconds = useRef(0);
-  const threshold = 15; // 🔉 認為是「太安靜」的音量門檻
+  const threshold = 20; // 🔉 認為是「太安靜」的音量門檻
   const triggered = useRef(false); // 避免重複觸發
 
   useEffect(() => {

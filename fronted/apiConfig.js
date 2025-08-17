@@ -1,6 +1,6 @@
 export const BASE_URL = 'http://192.168.0.131:5000';
 export const VIDEO_API_URL = 'https://eebde9f702f9.ngrok-free.app';
-export const VOICE_API_URL = 'https://a0c09aea1868.ngrok-free.app';
+export const VOICE_API_URL = 'https://3a0815a0f485.ngrok-free.app';
 
 export const API_ENDPOINTS = {
     // AppearanceScreen
@@ -30,4 +30,5 @@ export const API_ENDPOINTS = {
     VIDEO_RESPONSE: `${BASE_URL}/video-response`,
     VIDEO_PHOTO: `${BASE_URL}/video-photo`,
     VIDEO_LIP_SYNC: `${VIDEO_API_URL}/generate-lip-sync`,
+    VIDEO_NO_LIP_SYNC: `${BASE_URL}/get-no-lip-sync-video`,
 };

@@ -4,6 +4,8 @@ import whisper
 import tempfile
 import openai
 import uuid
+import random
+import json
 from services.VideoLogic import process_chat_response, initialize_resources, process_environment
 
 # 初始化 OpenAI client（填入你的 API 金鑰）
@@ -12,6 +14,8 @@ model = whisper.load_model("small")
 video_bp = Blueprint('video', __name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+STATS_DIR = os.path.join(BASE_DIR, "assets/Chat/chat_histories")
+VIDEO_DIR = os.path.join(BASE_DIR, "outputs/video")
 
 @video_bp.route('/video-voice', methods=['POST'])
 def save_voice_file():
@@ -104,3 +108,55 @@ def process_video_response():
     except Exception as e:
         print("⚠️ 回覆產生失敗:", str(e))
         return {"error": "產生回覆失敗"}, 500
+    
+@video_bp.route('/get-no-lip-sync-video', methods=['POST'])
+def video_response():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "缺少資料"}), 400
+
+        username = "test1"
+        character_name = "金珉奎"
+        reply_text = data.get("reply")
+
+        # 讀取角色 stats（取得 mood）
+        stats_path = os.path.join(STATS_DIR, f"{character_name}_stats.json")
+        if not os.path.exists(stats_path):
+            print(f"[DEBUG] 找不到角色 stats: {stats_path}")
+            return jsonify({"error": "找不到角色 stats"}), 404
+
+        with open(stats_path, "r", encoding="utf-8") as f:
+            stats = json.load(f)
+
+        mood = stats.get("mood", "中立")
+
+        # 選影片
+        video_folder = os.path.join(VIDEO_DIR, f"{username}_{character_name}", mood)
+        if not os.path.exists(video_folder):
+            return jsonify({"error": f"找不到影片資料夾: {video_folder}"}), 404
+
+        
+        candidates = [f for f in os.listdir(video_folder)
+                      if f.lower().startswith("voice") and f.endswith(".mp4")]
+
+        if not candidates:
+            return jsonify({"error": "找不到影片檔"}), 404
+
+        selected_video = random.choice(candidates)
+        video_path_fs = os.path.join(video_folder, selected_video)  # 真實檔案路徑
+
+        if os.path.exists(video_path_fs):
+            with open(video_path_fs, "rb") as f:
+              encoded = base64.b64encode(f.read()).decode()
+
+        return jsonify({
+            "reply": reply_text,
+            "mood": mood,
+            "video_base64": encoded,  
+        })
+
+    except Exception as e:
+        print(f"⚠️ video-response 發生錯誤: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
