@@ -136,9 +136,14 @@ def video_response():
         if not os.path.exists(video_folder):
             return jsonify({"error": f"找不到影片資料夾: {video_folder}"}), 404
 
-        
-        candidates = [f for f in os.listdir(video_folder)
-                      if f.lower().startswith("voice") and f.endswith(".mp4")]
+        waiting = True if reply_text == "" else False
+
+        if waiting:
+            candidates = [f for f in os.listdir(video_folder)
+                          if f.lower().startswith("no") and f.endswith(".mp4")]
+        else:
+            candidates = [f for f in os.listdir(video_folder)
+                          if f.lower().startswith("voice") and f.endswith(".mp4")]
 
         if not candidates:
             return jsonify({"error": "找不到影片檔"}), 404

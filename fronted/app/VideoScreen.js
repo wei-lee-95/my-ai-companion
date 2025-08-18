@@ -13,10 +13,13 @@ import { API_ENDPOINTS } from '../../fronted/apiConfig';
 import characterImage from '../assets/video-placeholder.png';
 
 export default function VideoScreen() {
+
+  const defaultVideo = require('../assets/no1.mp4'); // 確定影片在 assets 目錄
   const navigation = useNavigation();
   const [seconds, setSeconds] = useState(0);
   const videoRef = useRef(null);
-  const [videoUri, setVideoUri] = useState(null);
+  const [videoUri, setVideoUri] = useState(null); 
+  const [videoKey, setVideoKey] = useState(Date.now());
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({});
 
@@ -39,17 +42,17 @@ export default function VideoScreen() {
     return null;
   };
 
-  // 影片播放結束時呼叫
+  //影片播放結束時呼叫
   const onPlaybackStatusUpdate = async (status) => {
     if (status.didJustFinish) {
       setVideoUri(null);  // 回到圖片
-      start();            // 影片播完後重新開始錄音循環
+      //start();            // 影片播完後重新開始錄音循環
     }
   };
 
   // 儲存 base64 影片檔案
   const saveVideoBase64ToFile = async (base64) => {
-    const fileUri = FileSystem.cacheDirectory + 'generated_video.mp4';
+    const fileUri = FileSystem.cacheDirectory + 'generated_video_${Date.now()}.mp4';
     await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
     return fileUri;
   };
@@ -216,37 +219,43 @@ export default function VideoScreen() {
           return null;
         }
       }
+      
 
-      if (base64Audio) {
-        const audioFileUri = await saveBase64AudioToFile(base64Audio);
+    if (base64Audio) {
+      const audioFileUri = await saveBase64AudioToFile(base64Audio);
 
-        // 先生成影片
-        const videoFileUri = await fetchNoLipSyncVideo(replyData.reply);
-        //const videoFileUri = await generateLipSync(audioFileUri, imageFile);
-
-        if (videoFileUri) {
-          setVideoUri(videoFileUri);
-          // 影片開始播放，onPlaybackStatusUpdate 會處理結束事件
-        } else {
-          // 影片產生失敗，繼續下一輪錄音
-          start();
-        }
-
-        // 播放語音音檔（可選）
-        const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
-        await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
-        const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
-        sound.setOnPlaybackStatusUpdate(async (status) => {
-          if (status.didJustFinish) { 
-            sound.unloadAsync();
-          }
-        });
-
+      // 影片一立即顯示
+      const videoFileUri1 = await fetchNoLipSyncVideo(replyData.reply);
+      if (videoFileUri1) {
+        setVideoKey(Date.now()); 
+        setVideoUri(videoFileUri1); // Video 元件會根據 key 重新渲染
       } else {
-        // 沒有語音資料，直接下一輪錄音
         start();
+        return;
       }
 
+      // 播放語音
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: audioFileUri },
+        { shouldPlay: true }
+      );
+
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.didJustFinish) {
+          await sound.unloadAsync();
+
+          // 拿影片二
+          const videoFileUri2 = await fetchNoLipSyncVideo(""); // 或依 mood
+          if (videoFileUri2) {
+            setVideoKey(Date.now());   // 重新生成 key，強制 Video 重渲染
+            setVideoUri(videoFileUri2);
+          }
+          start(); // 開始下一輪錄音
+        }
+      });
+    } else {
+      start();
+    }
     } catch (e) {
       console.error('錄音/回覆流程錯誤：', e);
       start();
@@ -312,19 +321,21 @@ export default function VideoScreen() {
 
         {/* 視訊區 */}
         <View style={styles.videoArea}>
-          {videoUri ? (
-            <Video
-              key={videoUri}
-              ref={videoRef}
-              source={{ uri: videoUri }}
-              style={styles.mainImage}
-              resizeMode="cover"
-              shouldPlay
-              onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-            />
-          ) : (
-            <Image source={characterImage} style={styles.mainImage} />
-          )}
+          <Video
+            key={videoKey}  
+            ref={videoRef}
+            source={
+              videoUri
+                ? { uri: videoUri } // 如果有動態網址就播這個
+                : require('../assets/no1.mp4') // 沒有的話就播預設本地影片
+            }
+            style={styles.mainImage}
+            resizeMode="cover"
+            shouldPlay
+            isMuted={true}
+            isLooping={true}  
+            onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+          />
 
           {/* CameraView */}
           {isCameraOn && (

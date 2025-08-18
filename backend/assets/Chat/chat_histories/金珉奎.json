@@ -1,10 +1,10 @@
 {
   "user": {
     "role": "user",
-    "content": "哈囉！"
+    "content": "早安。"
   },
   "assistant": {
     "role": "assistant",
-    "content": "嗨！怎麼了？你看起來不太好，是發生什麼事了嗎？"
+    "content": "早…早安！怎麼了？看起來心情不好？有什麼我可以幫忙的嗎？"
   }
 }
