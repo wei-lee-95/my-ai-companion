@@ -95,8 +95,6 @@ export default function VoiceSettingScreen() {
 
   // ✅ 播放按鈕（從後端取 base64 播放）
   const handlePlay = async (base64Audio) => {
-    console.log('播放用 Base64 長度:', base64Audio.length);
-    console.log('類型:', typeof base64Audio);
     try {
       const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
       await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });

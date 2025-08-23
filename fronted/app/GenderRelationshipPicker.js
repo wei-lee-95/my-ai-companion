@@ -14,7 +14,6 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useNavigation } from '@react-navigation/native';
 
 export default function GenderRelationshipPicker() {
-
   const [gender, setGender] = useState('');
   const [relationship, setRelationship] = useState('');
   const [name, setName] = useState('');
@@ -48,7 +47,7 @@ export default function GenderRelationshipPicker() {
       >
         <View style={styles.titleContainer}>
           <Text style={styles.title}>
-            今天想要創建什麼樣{'\n'}的角色呢？
+            今天想要創建{'\n'} 什麼樣的角色呢？
           </Text>
         </View>
 
@@ -158,7 +157,7 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     height: 55,
-    width: 205,
+    width: 220,
     marginBottom: 15,
   },
   inputField: {
@@ -191,8 +190,8 @@ const styles = StyleSheet.create({
     width: 120,
     height: 50,
     backgroundColor: '#575853',
-    paddingVertical: 12,
     borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   buttonText: {

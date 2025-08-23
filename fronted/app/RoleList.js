@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import characterImage from '../assets/character.png';
@@ -58,35 +59,56 @@ export default function RoleList() {
     navigation.navigate('GenderRelationshipPicker');
   };
   
-const renderItem = ({ item, index }) => {
-  const isLeft = index % 2 === 0;
-  const isSingleItem = characters.length === 1;
+  const handleDeleteCharacter = (id) => {
+    Alert.alert(
+      "刪除角色",
+      "你確定要刪除這個角色嗎？",
+      [
+        { text: "取消", style: "cancel" },
+        {
+          text: "刪除",
+          style: "destructive",
+          onPress: () => {
+            setCharacters((prev) => prev.filter((item) => item.id !== id && !item.isAddButton));
+            // 保留加號按鈕
+            const addButton = prev.find((item) => item.isAddButton);
+            return [addButton, ...prev.filter((item) => item.id !== id && !item.isAddButton)];
+          },
+        },
+      ]
+    );
+  };
 
-  const boxStyle = [
-    styles.boxBase,
-    {
-      // 只有是左邊且不是單一項目時才加 marginRight
-      marginRight: isLeft && !isSingleItem ? 40 : 0,
-    },
-  ];
-   
-  if (item.isAddButton) {
+  const renderItem = ({ item, index }) => {
+    const isLeft = index % 2 === 0;
+    const isSingleItem = characters.length === 1;
+
+    const boxStyle = [
+      styles.boxBase,
+      {
+        // 只有是左邊且不是單一項目時才加 marginRight
+        marginRight: isLeft && !isSingleItem ? 40 : 0,
+      },
+    ];
+    
+    if (item.isAddButton) {
+      return (
+        <TouchableOpacity onPress={handleAddCharacter} style={boxStyle}>
+          <Text style={styles.plus}>＋</Text>
+        </TouchableOpacity>
+      );
+    }
+
     return (
-      <TouchableOpacity onPress={handleAddCharacter} style={boxStyle}>
-        <Text style={styles.plus}>＋</Text>
+      <TouchableOpacity
+        style={boxStyle}
+        onPress={() => navigation.navigate('MainScreen')}
+        onLongPress={() => handleDeleteCharacter(item.id)}
+      >
+        <Image source={item.image} style={styles.characterImage} />
       </TouchableOpacity>
     );
-  }
-
-  return (
-    <TouchableOpacity
-      style={boxStyle}
-      onPress={() => navigation.navigate('MainScreen')}
-    >
-      <Image source={item.image} style={styles.characterImage} />
-    </TouchableOpacity>
-  );
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -110,6 +132,9 @@ const renderItem = ({ item, index }) => {
           styles.listContent,
           isSingleItem && { paddingLeft: 100 }, // 👈 這一行是關鍵
         ]}      />
+      {/* 底部提示字 */}
+      <Text style={styles.footerHint}>長按角色卡片可刪除角色</Text>
+
     </View>
   );
 }
@@ -118,7 +143,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#efe2d8',
-    paddingTop: 60,
+    paddingTop: 65,
   },
   headerContainer: {
     flexDirection: 'row',
@@ -127,8 +152,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerTitle: {
-    flex: 1,
-    fontSize: 25,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#333',
@@ -174,4 +201,11 @@ const styles = StyleSheet.create({
     height: 100,
     resizeMode: 'contain',
   },
+  footerHint: {
+    textAlign: 'center',
+    fontSize: 15,
+    color: '#666',
+    marginBottom: 25,
+  },
+
 });

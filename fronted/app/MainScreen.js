@@ -12,8 +12,8 @@ export default function MainScreen() {
     <View style={styles.container}>
       {/* 頂部積分與設定 */}
       <View style={styles.topBar}>
-        <Text style={styles.points}>積分：35</Text>
-        <TouchableOpacity>
+        {/* <Text style={styles.points}>積分：35</Text> */}
+        <TouchableOpacity onPress={() => navigation.navigate('SettingScreen')} >
           <Ionicons name="settings-outline" size={30} color="#555" />
         </TouchableOpacity>
       </View>
@@ -25,20 +25,9 @@ export default function MainScreen() {
       />
 
       {/* 左側功能按鈕：任務 */}
-      <View style={styles.leftButtons}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="list-outline" size={30} color="#555" />
-        </TouchableOpacity>
-      </View>
 
       {/* 右側功能按鈕 */}
       <View style={styles.sideButtons}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('MemoryStoreScreen')}>
-          <Ionicons name="heart-outline" size={30} color="#555" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="help-circle-outline" size={30} color="#555" />
-        </TouchableOpacity>
         <TouchableOpacity 
           style={styles.iconButton}
           onPress={() => navigation.navigate('Photo Upload')}>
@@ -54,11 +43,11 @@ export default function MainScreen() {
           </View>
           <Text style={styles.label}>角色</Text>
         </TouchableOpacity>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('MemoryStoreScreen')}>
           <View style={styles.circleButton}>
             <Ionicons name="calendar-outline" size={35} color="#333" />
           </View>
-          <Text style={styles.label}>行事曆</Text>
+          <Text style={styles.label}>回憶小舖</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
           <View style={styles.circleButton}>
@@ -92,10 +81,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   character: {
-    width: 300,
+    width: 375,
     height: 500,
     resizeMode: 'contain',
-    marginTop: 40,
+    marginTop: 70,
   },
   leftButtons: {
     position: 'absolute',
@@ -105,7 +94,7 @@ const styles = StyleSheet.create({
   sideButtons: {
     position: 'absolute',
     right: 20,
-    top: 150,
+    top: 100,
   },
   iconButton: {
     marginVertical: 10,

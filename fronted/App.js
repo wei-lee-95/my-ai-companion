@@ -14,6 +14,7 @@ import MemoryList from './app/MemoryList';
 import MemoryDetail from './app/MemoryDetail';
 import { useEffect } from 'react';
 import PhotoUploadScreen from './app/PhotoUploadScreen';
+import SettingScreen from './app/SettingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ export default function App() {
         <Stack.Screen name="Photo Upload" component={PhotoUploadScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="MemoryList" component={MemoryList} options={{ headerShown: false }}/>
         <Stack.Screen name="MemoryDetail" component={MemoryDetail} options={{ headerShown: false }}/>
+        <Stack.Screen name="SettingScreen" component={SettingScreen} options={{ headerShown: false }}/>
 
       </Stack.Navigator>
     </NavigationContainer>

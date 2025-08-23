@@ -424,7 +424,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   pipImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  pipPlaceholder: { flex: 1, backgroundColor: '#888' },
 
+  // 底部三顆按鈕（靠下）
   hangupButton: {
     position: 'absolute',
     bottom: 20,

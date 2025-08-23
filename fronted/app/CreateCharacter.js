@@ -215,7 +215,7 @@ export default function CreateCharacter() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 25,
+    paddingTop: 40,
     paddingBottom: 40,
     paddingHorizontal: 25,
     backgroundColor: '#efe2d8',
@@ -233,8 +233,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 45,
-    left: 3,
+    top: 30,
+    left: 0,
     backgroundColor: '#000',
     borderRadius: 15,
     padding: 6,
