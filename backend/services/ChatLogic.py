@@ -43,12 +43,26 @@ def load_stats(character_name):
 # ====== 對話紀錄 Memory ======
 def load_chat_history(character_name):
     path = os.path.join(HISTORY_DIR, f"{character_name}.json")
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    else:
-        print(" 找不到對話紀錄，將建立新角色。")
-        return None
+    if not os.path.exists(path):
+        print("⚠️ 找不到對話紀錄，將建立新角色。")
+        return []
+
+    with open(path, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            print("❌ 對話檔案壞掉了，先重置")
+            return []
+
+    # 確保每個 item 是 dict 且有 role/content
+    fixed = []
+    for m in data:
+        if isinstance(m, dict) and "role" in m and "content" in m:
+            fixed.append(m)
+        elif isinstance(m, str):
+            # 把純字串包成 user 消息，避免壞掉
+            fixed.append({"role": "user", "content": m})
+    return fixed
 
 def save_chat_history(character_name, messages):
     path = os.path.join(HISTORY_DIR, f"{character_name}.json")

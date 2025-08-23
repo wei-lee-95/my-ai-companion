@@ -15,6 +15,8 @@ import MemoryDetail from './app/MemoryDetail';
 import { useEffect } from 'react';
 import PhotoUploadScreen from './app/PhotoUploadScreen';
 import SettingScreen from './app/SettingScreen';
+import AuthScreen from './app/AuthScreen';
+import RegisterScreen from './app/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,7 +24,9 @@ export default function App() {
   
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="RoleList">
+      <Stack.Navigator initialRouteName="Auth">
+        <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="RoleList" component={RoleList} options={{ headerShown: false }}/>
         <Stack.Screen name="GenderRelationshipPicker" component={GenderRelationshipPicker} options={{ headerShown: false }}/>
         <Stack.Screen name="CreateCharacter" component={CreateCharacter} options={{ headerShown: false }}/>

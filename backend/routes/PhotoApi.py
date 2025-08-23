@@ -48,6 +48,7 @@ def generate():
         final_prompt = (
             f"Generate a semi-realistic anime style image of the character: {AI_BOY_DESC}, "
             f"placed inside a scene that includes {user_desc}. The background and object should be animated, clean pastel style, like illustrated character profile, and smooth shading."
+            f"Also include these details: {user_prompt}"
         )
     
     print(f"\n[Prompt] {final_prompt}\n")

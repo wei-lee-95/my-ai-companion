@@ -1,10 +1,26 @@
-{
-  "user": {
+[
+  {
     "role": "user",
-    "content": "這是毛利語。"
+    "content": "user"
   },
-  "assistant": {
+  {
+    "role": "user",
+    "content": "assistant"
+  },
+  {
+    "role": "user",
+    "content": "今天唸書好辛苦喔 好想被安慰🥺"
+  },
+  {
     "role": "assistant",
-    "content": "小雲？你怎麼了？看起來不太好，我能幫忙嗎？"
+    "content": "哎呀，小雲你真的好努力啊！來，抱抱～別忘了我一直在這裡支持你，等你累了我幫你煮點好吃的，怎麼樣？  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 2  \n}  \n[/STATS]"
+  },
+  {
+    "role": "user",
+    "content": "今天唸書好辛苦喔 好想被安慰🥺"
+  },
+  {
+    "role": "assistant",
+    "content": "小雲你真的太棒了，這麼努力！要不要我陪你聊聊，或者幫你放鬆一下？你不是一個人喔～  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 2  \n}  \n[/STATS]"
   }
-}
+]
