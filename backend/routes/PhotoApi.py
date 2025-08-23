@@ -22,6 +22,16 @@ def generate():
     uploaded_file.save(filepath)
     data_url = image_to_data_url(filepath)
 
+    def translate_to_english(text):
+        output = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a translator that only outputs English."},
+                {"role": "user", "content": text}
+            ]
+        )
+        return output.choices[0].message.content.strip()
+
 
     # 🎯 Vision API 分析使用者圖片內容
     response = openai.chat.completions.create(
@@ -45,10 +55,11 @@ def generate():
         f"soft pastel gradient background, full-body, natural head-to-body ratio, smooth shading, modern outfits, natural proportion, like illustrated character profile."
     )
     if user_prompt:
+        translated_prompt = translate_to_english(user_prompt)
         final_prompt = (
             f"Generate a semi-realistic anime style image of the character: {AI_BOY_DESC}, "
             f"placed inside a scene that includes {user_desc}. The background and object should be animated, clean pastel style, like illustrated character profile, and smooth shading."
-            f"Also include these details: {user_prompt}"
+            f"Also include these details: {translated_prompt}"
         )
     
     print(f"\n[Prompt] {final_prompt}\n")

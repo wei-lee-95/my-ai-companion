@@ -18,7 +18,7 @@ def _whisper_model():
         _whisper = whisper.load_model("small")
     return _whisper
 
-chatRoom_bp = Blueprint("chatRoom", __name__, url_prefix="/chat")
+chatRoom_bp = Blueprint("chatRoom", __name__)
 CHAR_NAME = "金珉奎"
 
 # ===== 設定：歷史與摘要 =====
@@ -125,7 +125,7 @@ def _build_api_messages(profile, stats, full_history, user_input, context):
     return base
 
 # ===== 文字訊息：POST /chat =====
-@chatRoom_bp.route("", methods=["POST"])
+@chatRoom_bp.route("/chat", methods=["POST"])
 def chat():
     print("收到前端請求")
     data = request.get_json(force=True) or {}
@@ -223,7 +223,10 @@ def chat_image():
 
     except Exception as e:
         print("❌ /chat-image error:", e)
-        return jsonify({"error": "圖片分析失敗"}), 500
+        return jsonify({
+            "error": "圖片分析失敗",
+            "detail": str(e)
+        }), 500
 
 # ===== 語音訊息：POST /chat/chat-vocal =====
 @chatRoom_bp.route("/chat-vocal", methods=["POST"])

@@ -25,7 +25,7 @@ export default function MemoryStoreScreen() {
     anniversary: [
       {
         key: '1',
-        event: '交往紀念日',
+        event: '第一次見面',
         date: '2023年5月6日',
         time: Date.parse('2023-05-06'),
         fromChat: false,
@@ -50,9 +50,9 @@ export default function MemoryStoreScreen() {
     emotion: [
       {
         key: '1',
-        event: '一起大笑',
-        date: '2025年1月1日',
-        time: Date.parse('2025-01-01'),
+        event: '第一次被他安慰',
+        date: '2025年8月23日',
+        time: Date.parse('2025-08-23'),
         fromChat: false,
       },
     ],

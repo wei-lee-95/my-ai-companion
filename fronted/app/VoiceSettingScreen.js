@@ -22,6 +22,7 @@ export default function VoiceSettingScreen() {
   const [isUploaded, setIsUploaded] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedFileUri, setUploadedFileUri] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [sound, setSound] = useState(null);
   const navigation = useNavigation();
   const [generatedBase64, setGeneratedBase64] = useState(null);
@@ -40,6 +41,7 @@ export default function VoiceSettingScreen() {
   // ✅ 確認設定 → 呼叫後端產生音檔
   const handleGenerate = async () => {
     try {
+      setLoading(true);
       const formData = new FormData();
       formData.append('file', {
         uri: uploadedFileUri,
@@ -75,6 +77,7 @@ export default function VoiceSettingScreen() {
         });
         const generateResult = await generateRes.json();
         console.log('生成語音成功：', generateResult);
+        setLoading(false);
         if (generateResult.audio_base64) {
           setGeneratedBase64(generateResult.audio_base64);
           alert('語音生成完成，開始播放...');
@@ -199,6 +202,13 @@ export default function VoiceSettingScreen() {
           onValueChange={setSpeed}
         />
       </View>
+
+      {/* Loading */}
+      {loading && (
+        <View style={{ width: '100%', marginVertical: 12, alignItems: 'center', fontSize: 16, }}>
+        <Text style={styles.loadingText}>聲音生成中...</Text>
+        </View>
+      )}
 
       <View style={styles.buttonRow}>
         <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>

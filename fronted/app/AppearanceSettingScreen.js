@@ -19,6 +19,7 @@ export default function AppearanceSettingScreen() {
   const route = useRoute();
   const {gender} = route.params || {};
   const [imageUploaded, setImageUploaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [generatedResult, setGeneratedResult] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [imageUri, setImageUri] = useState(null);
@@ -49,6 +50,7 @@ export default function AppearanceSettingScreen() {
 };
   
 const handleGenerateResult = async () => {
+  setLoading(true);
   const imageBase64 = await FileSystem.readAsStringAsync(imageUri, { encoding: 'base64' });
 
   const styleMap = {
@@ -94,6 +96,7 @@ const handleGenerateResult = async () => {
     setImageUri(`data:image/png;base64,${base64Result.image_base64}`);
     setGeneratedResult(true);
     setStyleLocked(true);
+    setLoading(false);
 
     // ✅ 成功生成外觀後，自動呼叫 generate-emotion
     const emotionPayload = {
@@ -196,10 +199,19 @@ const handleGenerateResult = async () => {
             </Text>
           </TouchableOpacity>
         ))}
+
       </View>
+
+      {/* Loading */}
+      {loading && (
+        <View style={{ width: '100%', marginVertical: 12, alignItems: 'center', fontSize: 16 }}>
+          <Text style={styles.loadingText}>人物生成中...</Text>
+        </View>
+      )}
 
       {/* 按鈕列 */}
       <View style={styles.buttonRow}>
+
         {!generatedResult ? (
           <TouchableOpacity
             style={[
@@ -348,6 +360,6 @@ const styles = StyleSheet.create({
   styleButtonTextSelected: {
     color: '#fff',
     fontWeight: 'bold',
-  },
+  }
 
 });
