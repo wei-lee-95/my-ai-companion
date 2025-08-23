@@ -9,7 +9,7 @@ from PIL import Image
 
 webui_server_url = "http://192.168.0.131:7860"  #通常是7860
 
-openpose_image_path = './baseImage/openpose.png'
+openpose_image_path = './assets/Appearance/openpose.png'
 
 BASE_DIR = os.path.dirname(__file__) 
 

@@ -1,6 +1,6 @@
 export const BASE_URL = 'http://192.168.0.131:5000';
-export const VIDEO_API_URL = 'https://eebde9f702f9.ngrok-free.app';
-export const VOICE_API_URL = 'https://3a0815a0f485.ngrok-free.app';
+export const VIDEO_API_URL = 'https://0828e917876f.ngrok-free.app';
+export const VOICE_API_URL = 'https://933ac1807001.ngrok-free.app';
 
 export const API_ENDPOINTS = {
     // AppearanceScreen
@@ -13,7 +13,7 @@ export const API_ENDPOINTS = {
 
     // VoiceSettingScreen
     TRAIN_VOICE: `${VOICE_API_URL}/train-voice-model`,
-    GENERATE_VOICE: `${BASE_URL}/generate-voice`,
+    GENERATE_VOICE: `${VOICE_API_URL}/generate-voice`,
     GET_AUDIO_BASE64: `${BASE_URL}/get-audio-base64`,
 
     // ChatScreen

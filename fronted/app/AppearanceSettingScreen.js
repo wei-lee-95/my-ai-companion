@@ -14,7 +14,7 @@ import * as FileSystem from 'expo-file-system';
 import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function AppearanceSettingScreen() {
-  const VIDEO_API_URL = "https://14b32f898e24.ngrok-free.app";
+  const VIDEO_API_URL = "https://0828e917876f.ngrok-free.app";
   const navigation = useNavigation();
   const route = useRoute();
   const {gender} = route.params || {};
@@ -70,17 +70,17 @@ const handleGenerateResult = async () => {
     };
 
     //發送 POST 請求到後端
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),      
-    });
+    // const response = await fetch(endpoint, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(payload),      
+    // });
 
-    if (!response.ok) {
-      throw new Error('生成圖片失敗');
-    }
+    // if (!response.ok) {
+    //   throw new Error('生成圖片失敗');
+    // }
 
-    const result = await response.json();
+    // const result = await response.json();
     
     // 再發送一個請求獲取 base64 格式的圖片
     const base64Response = await fetch(API_ENDPOINTS.GET_IMAGE_BASE64);
@@ -97,7 +97,7 @@ const handleGenerateResult = async () => {
 
         // ✅ 成功生成外觀後，自動呼叫 generate-emotion
     const emotionPayload = {
-      userId: "test1",      // 你前端保存的使用者名稱
+      userId: "test2",      // 你前端保存的使用者名稱
       character_name: "金珉奎", // 角色名稱
     };
 
@@ -115,7 +115,7 @@ const handleGenerateResult = async () => {
     console.log('生成表情結果:', emotionResult);
 
     const videoPayload = {
-    username: "test1",
+    username: "test2",
     character_name: "金珉奎",
     colab_url: VIDEO_API_URL
   };

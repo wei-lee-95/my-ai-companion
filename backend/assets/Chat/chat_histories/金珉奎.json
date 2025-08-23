@@ -1,10 +1,10 @@
 {
   "user": {
     "role": "user",
-    "content": "早安。"
+    "content": "這是毛利語。"
   },
   "assistant": {
     "role": "assistant",
-    "content": "早…早安！怎麼了？看起來心情不好？有什麼我可以幫忙的嗎？"
+    "content": "小雲？你怎麼了？看起來不太好，我能幫忙嗎？"
   }
 }

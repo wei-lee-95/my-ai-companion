@@ -84,6 +84,6 @@ def generate_emotions(user_name, character_name):
 
         # ⏳ 等待 5 分鐘（除最後一張外）
         if i < len(emotion_keys) - 1:
-            print("⏳ 等待 5 分鐘再送下一張...")
-            time.sleep(310)
+            print("⏳ 等待 12 秒再送下一張...")
+            time.sleep(12)
 

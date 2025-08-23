@@ -123,7 +123,7 @@ export default function VideoScreen() {
       const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "Mingyu" }),
+        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "金珉奎" }),
       });
 
       const voiceResult = await generateRes.json();
