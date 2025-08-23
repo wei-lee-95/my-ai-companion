@@ -126,10 +126,12 @@ def generate_voice():
             return jsonify({"error": "找不到模型檔案"}), 500
         
         # "zh-TW-YunJheNeural"
+        # "zh-TW-HsiaoYuNeural"
+        
         run_tts_script(
             tts_text=text,
-            tts_language_code="cmn-TW",
-            tts_voice="cmn-TW-Standard-B",
+            #tts_language_code="cmn-TW",
+            tts_voice="zh-TW-YunJheNeural",
             tts_rate=rate,
             pitch=pitch,
             output_tts_path=tts_path,

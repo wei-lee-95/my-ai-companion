@@ -12,8 +12,8 @@ export const API_ENDPOINTS = {
 
 
     // VoiceSettingScreen
-    TRAIN_VOICE: `${VOICE_API_URL}/train-voice-model`,
-    GENERATE_VOICE: `${VOICE_API_URL}/generate-voice`,
+    TRAIN_VOICE: `${BASE_URL}/train-voice-model`,
+    GENERATE_VOICE: `${BASE_URL}/generate-voice`,
     GET_AUDIO_BASE64: `${BASE_URL}/get-audio-base64`,
 
     // ChatScreen
