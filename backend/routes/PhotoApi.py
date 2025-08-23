@@ -2,7 +2,7 @@ from flask import Blueprint, Flask, Response, request, jsonify # 用flask來做�
 import os, base64
 import openai
 import requests
-from services.PhotoLogic import image_to_data_url, AI_BOY_DESC, get_character_appearance
+from services.PhotoLogic import image_to_data_url, get_character_appearance
 
 photo_bp = Blueprint('photo', __name__)
 

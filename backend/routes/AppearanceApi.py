@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify
-from services.AppearanceGirlLogic import generate_with_faceid, build_custom_prompt
+from services.AppearanceGirlLogic import generate_with_faceid, build_custom_prompt, get_username
 from services.AppearanceBoyLogic import generate_with_faceid_boy, build_custom_prompt_boy
 from services.ExpressionLogic import generate_emotions
 from services.GenerateVideoLogic import generate_videos
-from database.database import get_username
 from rembg import remove
 from PIL import Image
 import base64, os
@@ -169,7 +168,7 @@ def generate_video_route():
     if not userId or not character_name:
         return jsonify({"error": "缺少使用者或角色名稱"}), 400
 
-    username = get_username(userId)
+    username = get_user_by_id(userId)
     if not username:
         return jsonify({"error": f"找不到 username for userId={userId}"}), 400
     

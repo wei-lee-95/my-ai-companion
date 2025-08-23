@@ -241,6 +241,33 @@ def extract_reply_text(full_reply):
         return full_reply.split("[STATS]")[0].strip()
     return full_reply.strip()
 
+# 解析 STATS
+def parse_stats(reply, prev_stats):
+    if "[STATS]" in reply and "[/STATS]" in reply:
+        stats_block = reply.split("[STATS]")[1].split("[/STATS]")[0].strip()
+        stats_block = re.sub(r':\s*\+(\d+)', r': \1', stats_block)
+
+        try:
+            stats_json = json.loads(stats_block)
+            mood = stats_json.get("mood", prev_stats["mood"])
+            delta = int(stats_json.get("affection_change", 0))
+            affection = max(0, min(100, int(prev_stats["affection"]) + delta))
+
+            return {
+                "mood": mood,
+                "affection": str(affection),
+                "last_chat_time": datetime.now().isoformat()
+            }
+        
+        except Exception as e:
+            print(f"❌ stats 解析錯誤: {e}")
+        
+        #fallback
+        return {
+            "mood": prev_stats.get("mood", "中立"),
+            "affection": prev_stats.get("affection", "30"),
+            "last_chat_time": datetime.now().isoformat()
+        }
 
 # 下載ffmpeg 如果有加到環境變數 應該就不用
 # ✅ 手動加入 ffmpeg 路徑（請改成你自己的路徑）

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import characterImage from '../assets/character.png';

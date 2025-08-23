@@ -55,7 +55,6 @@ export default function AuthScreen() {
       console.error('❌ Login error:', error);
       Alert.alert('錯誤', `無法連接伺服器: ${error.message}`);
     }
-    navigation.navigate('RoleList');
   };
 
   const handleRegister = () => {

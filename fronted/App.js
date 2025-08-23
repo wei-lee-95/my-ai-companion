@@ -35,7 +35,8 @@ export default function App() {
         <Stack.Screen name="MainScreen" component={MainScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="VideoScreen" component={VideoScreen} options={{ headerShown: false }}/>
-        <Stack.Screen name="PhotoUploadScreen" component={PhotoUploadScreen} options={{ headerShown: false }}/>        <Stack.Screen name="MemoryList" component={MemoryList} options={{ headerShown: false }}/>
+        <Stack.Screen name="PhotoUploadScreen" component={PhotoUploadScreen} options={{ headerShown: false }}/>        
+        <Stack.Screen name="MemoryList" component={MemoryList} options={{ headerShown: false }}/>
         <Stack.Screen name="MemoryDetail" component={MemoryDetail} options={{ headerShown: false }}/>
 
       </Stack.Navigator>
