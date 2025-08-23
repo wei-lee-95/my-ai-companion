@@ -3,6 +3,7 @@ from services.AppearanceGirlLogic import generate_with_faceid, build_custom_prom
 from services.AppearanceBoyLogic import generate_with_faceid_boy, build_custom_prompt_boy
 from services.ExpressionLogic import generate_emotions
 from services.GenerateVideoLogic import generate_videos
+from database.database import get_username
 from rembg import remove
 from PIL import Image
 import base64, os
@@ -22,6 +23,8 @@ def generate_appearance_girl():
     data = request.get_json()
     outfit_style = data.get('style')
     image_base64 = data.get('imageBase64')
+    userId = data.get('userId')
+    name = data.get('name')
     seed = -1
 
     if not image_base64:
@@ -41,9 +44,15 @@ def generate_appearance_girl():
             image = Image.open(image_path)
             removed_image = remove(image)
 
+            username = get_username(userId)
+            if not username:
+                return jsonify({"error": f"找不到 username for userId={userId}"}), 400
+
             # 儲存處理後的圖
-            output_filename = 'removed_background.png'
-            output_path = os.path.join(rem_dir, output_filename)
+            txt2img_dir = os.path.join(BASE_DIR, "outputs", "txt2img")
+            os.makedirs(txt2img_dir, exist_ok=True)
+            output_filename = f"{username}_{name}.png"
+            output_path = os.path.join(txt2img_dir, output_filename)
             removed_image.save(output_path)
 
             return jsonify({"message": "生成成功"})
@@ -59,6 +68,8 @@ def generate_appearance_boy():
     data = request.get_json()
     outfit_style = data.get('style')
     image_base64 = data.get('imageBase64')
+    userId = data.get('userId')
+    name = data.get('name')
     seed = -1
 
     if not image_base64:
@@ -79,8 +90,10 @@ def generate_appearance_boy():
             removed_image = remove(image)
 
             # 儲存處理後的圖
-            output_filename = 'removed_background.png'
-            output_path = os.path.join(rem_dir, output_filename)
+            txt2img_dir = os.path.join(BASE_DIR, "outputs", "txt2img")
+            os.makedirs(txt2img_dir, exist_ok=True)
+            output_filename = f"{userId}_{name}.png"
+            output_path = os.path.join(txt2img_dir, output_filename)
             removed_image.save(output_path)
 
             return jsonify({"message": "生成成功"})
@@ -93,8 +106,19 @@ def generate_appearance_boy():
 
 @appearance_bp.route('/get-image-base64', methods=['GET'])
 def get_image_base64():
+
+    userId = request.args.get('userId')
+    name = request.args.get('name')
+
+    if not userId or not name:
+        return jsonify({"error": "缺少 userId 或 name"}), 400
+    
+    username = get_username(userId)
+    if not username:
+        return jsonify({"error": f"找不到 username for userId={userId}"}), 400
+
     time.sleep(5)
-    image_filename = 'removed_background_boy.png'
+    image_filename = f"{username}_{name}.png"
     image_path = os.path.join(rem_dir, image_filename)
 
     if not os.path.exists(image_path):
@@ -114,14 +138,18 @@ def get_image_base64():
 @appearance_bp.route('/generate-emotion', methods=['POST'])
 def generate_emotion():
     data = request.get_json()
-    user_name = data.get("userId")
-    character_name = data.get("character_name")
+    userId = data.get("userId")
+    name = data.get("name")
 
-    if not user_name or not character_name:
+    if not userId or not name:
         return jsonify({"error": "缺少使用者或角色名稱"}), 400
 
+    username = get_username(userId)
+    if not username:
+        return jsonify({"error": f"找不到 username for userId={userId}"}), 400
+
     try:
-        generate_emotions(user_name, character_name)
+        generate_emotions(username, name)
         return jsonify({"message": "表情生成成功"}), 200
     except FileNotFoundError as e:
         return jsonify({"error": str(e)}), 404
@@ -134,13 +162,17 @@ def generate_emotion():
 def generate_video_route():
     
     data = request.get_json()
-    username = data.get("username")
-    character_name = data.get("character_name")
+    userId = data.get("userId")
+    character_name = data.get("name")
     colab_url = data.get("colab_url")
 
-    if not username or not character_name or not colab_url:
-        return jsonify({"error": "缺少 username、character_name 或 colab_url"}), 400
+    if not userId or not character_name:
+        return jsonify({"error": "缺少使用者或角色名稱"}), 400
 
+    username = get_username(userId)
+    if not username:
+        return jsonify({"error": f"找不到 username for userId={userId}"}), 400
+    
     try:
         results = generate_videos(username, character_name, colab_url)
         return jsonify({"results": results})

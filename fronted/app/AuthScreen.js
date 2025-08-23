@@ -30,31 +30,31 @@ export default function AuthScreen() {
     }
 
     console.log('🌐 Making API call to login...');
-    // try {
-    //   const response = await fetch(API_ENDPOINTS.LOGIN, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       account: account,
-    //       password: password
-    //     })
-    //   });
+    try {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account: account,
+          password: password
+        })
+      });
 
-    //   const data = await response.json();
-    //   console.log('📥 Login response:', { status: response.status, data });
+      const data = await response.json();
+      console.log('📥 Login response:', { status: response.status, data });
       
-    //   if (response.ok) {
-    //     Alert.alert('登入成功', `歡迎回來，${data.name}！`);
-    //     // 可以在這裡儲存用戶 ID 到 AsyncStorage
-    //     // await AsyncStorage.setItem('userId', data.user_id.toString());
-    //     navigation.navigate('RoleList',{ userId: data.user.id });
-    //   } else {
-    //     Alert.alert('登入失敗', data.error || '帳號或密碼錯誤');
-    //   }
-    // } catch (error) {
-    //   console.error('❌ Login error:', error);
-    //   Alert.alert('錯誤', `無法連接伺服器: ${error.message}`);
-    // }
+      if (response.ok) {
+        Alert.alert('登入成功', `歡迎回來，${data.user.username}！`);
+        // 可以在這裡儲存用戶 ID 到 AsyncStorage
+        // await AsyncStorage.setItem('userId', data.user_id.toString());
+        navigation.navigate('RoleList',{ userId: data.user.id });
+      } else {
+        Alert.alert('登入失敗', data.error || '帳號或密碼錯誤');
+      }
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      Alert.alert('錯誤', `無法連接伺服器: ${error.message}`);
+    }
     navigation.navigate('RoleList');
   };
 

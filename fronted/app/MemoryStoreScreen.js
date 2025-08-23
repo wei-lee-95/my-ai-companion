@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 function formatDate(dateStr) {
   // 如果原本就長得像 '2025年7月29日'，直接回傳
@@ -21,52 +22,110 @@ function formatDate(dateStr) {
 
 export default function MemoryStoreScreen() {
   const navigation = useNavigation();
-  const [dataByCategory, setDataByCategory] = useState({
-    anniversary: [
-      {
-        key: '1',
-        event: '第一次見面',
-        date: '2023年5月6日',
-        time: Date.parse('2023-05-06'),
-        fromChat: false,
-      },
-    ],
-    event: [
-      {
-        key: '1',
-        event: '水族館約會',
-        date: '2024年7月6日',
-        time: Date.parse('2024-07-06'),
-        fromChat: false,
-      },
-      {
-        key: '2',
-        event: '露營日',
-        date: '2025年5月20日',
-        time: Date.parse('2025-05-20'),
-        fromChat: false,
-      },
-    ],
-    emotion: [
-      {
-        key: '1',
-        event: '第一次被他安慰',
-        date: '2025年8月23日',
-        time: Date.parse('2025-08-23'),
-        fromChat: false,
-      },
-    ],
-  });
-
-  const [categories, setCategories] = useState([
-    { key: 'anniversary', icon: '❤️', title: '紀念日' },
-    { key: 'event', icon: '📅', title: '事件' },
-    { key: 'emotion', icon: '😄', title: '情緒' },
-  ]);
-
+  const route = useRoute();
+  const { characterId, userId, name } = route.params; //from mainscreen
+  const [dataByCategory, setDataByCategory] = useState({});
+  const [latestMemoriesByCategory, setLatestMemoriesByCategory] = useState({});
+  const [categories, setCategories] = useState([])
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newIcon, setNewIcon] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // 1. 拿分類
+  useEffect(() => {
+    if (!characterId) return;
+    setLoading(true);
+
+    fetch(`${API_ENDPOINTS.GET_MEMORY_CATEGORIES}?character_id=${characterId}`)
+      .then(res => res.json())
+      .then(json => {
+        if (!json.categories) throw new Error("無法取得 categories");
+        const cats = json.categories.map(item => ({
+          key: item.id.toString(),
+          id: item.id,
+          title: item.category,
+          icon: item.icon || '', // icon 直接用資料庫的 icon
+        }));
+        setCategories(cats);
+      })
+      .catch(err => {
+        console.error('取得分類失敗', err);
+      })
+  }, [characterId]);
+
+
+  // 拿每個分類的記憶詳情並找最大 memory_id
+  useEffect(() => {
+    if (categories.length === 0) return;
+
+    setLoading(true);
+    const fetchDetailsForCategories = async () => {
+      const results = {};
+
+      for (const cat of categories) {
+        try {
+          const res = await fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${characterId}&category_id=${cat.id}`);
+          const json = await res.json();
+          if (json.memories && json.memories.length > 0) {
+            // 找最大 memory_id
+            const latestMemory = json.memories.reduce((maxMem, mem) =>
+              mem.memory_id > maxMem.memory_id ? mem : maxMem
+            );
+            results[cat.id] = {
+              memory_title: latestMemory.memory_title,
+              date: latestMemory.date,
+            };
+          } else {
+            results[cat.id] = null;
+          }
+        } catch (e) {
+          console.error(`取得分類 ${cat.title} 記憶失敗`, e);
+          results[cat.id] = null;
+        }
+      }
+      setLatestMemoriesByCategory(results);
+      setLoading(false);
+    };
+
+    fetchDetailsForCategories();
+  }, [categories, characterId]);
+
+ 
+  const handleNewCategory = async () => {
+    if (!newTitle.trim() || !newIcon.trim()) return;
+ 
+    try {
+      const res = await fetch(`${API_ENDPOINTS.ADD_MEMORY_CATEGORY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character_id: characterId,
+          category: newTitle.trim(),
+          icon: newIcon.trim(),
+        }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        const newId = data.category_id; // 後端回傳的數字 ID
+        setCategories(prev => [...prev, {
+          key: newId.toString(),
+          id: newId, 
+          title: newTitle.trim(),
+          icon: newIcon.trim(),
+        }]);
+        setModalVisible(false);
+        setNewTitle('');
+        setNewIcon('');
+      } else {
+        alert('新增分類失敗: ' + (data.error || '未知錯誤'));
+      }
+    } catch (error) {
+      console.error('新增分類錯誤', error);
+      alert('新增分類發生錯誤，請稍後再試');
+    }
+  };
 
   const renderItem = ({ item }) => {
   const latestItem = (dataByCategory[item.key] || [])
@@ -78,9 +137,10 @@ export default function MemoryStoreScreen() {
         style={styles.card}
         onPress={() =>
           navigation.navigate('MemoryList', {
-            title: item.title,
-            icon: item.icon,
-            data: dataByCategory[item.key] || [],
+            character_id: characterId,
+            category_id: item.id,
+            category_title: item.title,
+            category_icon: item.icon,
           })
         }
       >
@@ -157,19 +217,7 @@ export default function MemoryStoreScreen() {
 
               <TouchableOpacity
                 style={styles.modalSave}
-                onPress={() => {
-                  if (!newTitle.trim() || !newIcon.trim()) return;
-                  const newKey = `custom-${Date.now()}`;
-                  setCategories((prev) => [...prev, {
-                    key: newKey,
-                    icon: newIcon.trim(),
-                    title: newTitle.trim(),
-                  }]);
-                  setDataByCategory((prev) => ({ ...prev, [newKey]: [] }));
-                  setModalVisible(false);
-                  setNewTitle('');
-                  setNewIcon('');
-                }}
+                onPress={handleNewCategory}
               >
                 <Text style={styles.modalSaveText}>儲存</Text>
               </TouchableOpacity>

@@ -10,12 +10,16 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import characterImage from '../assets/character.png';
+import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
+
 
 export default function RoleList() {
-  const isSingleItem = (characters || []).length === 1;
-  const [characters, setCharacters] = useState([]);
+  const [characters, setCharacters] = useState([{ id: 'add-button', isAddButton: true },]);
   const navigation = useNavigation();
   const route = useRoute();
+  const [loading, setLoading] = useState(false);
+  const isSingleItem = characters.length === 1;
+  const { userId } = route.params; //從登入頁面route使用者id來rolelist
 
     useEffect(() => {
       // 初始化加號按鈕
@@ -28,35 +32,29 @@ export default function RoleList() {
   }, []);
 
   useEffect(() => {
-    if (route.params?.characterData) {
-      const { characterImageName } = route.params.characterData;
+    setLoading(true);
+    fetch(`${API_ENDPOINTS.ROLELIST}?userId=${userId}`) 
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) {
+          const roles = json.roles.map((role) => ({
+            id: role.character_id.toString(),
+            imageUri: `${BASE_URL}/${role.full_body_image_path}`, // 完整圖片網址
+            isAddButton: false,
+          }));
+          setCharacters((prev) => [prev.find((i) => i.isAddButton), ...roles]);
+        } else {
+          // 錯誤處理
+          alert('取得角色資料失敗');
+        }
+      })
+      .catch(() => alert('無法連接伺服器'))
+      .finally(() => setLoading(false));
+  }, []);
 
-      let characterSource;
-      switch (characterImageName) {
-        case 'character.png':
-          characterSource = characterImage;
-          break;
-        // 可擴展其他圖片
-        default:
-          characterSource = characterImage;
-      }
-
-      // 加在加號之後（右上）
-      setCharacters((prev) => {
-        const addButton = prev.find((item) => item.isAddButton);
-        const others = prev.filter((item) => !item.isAddButton);
-        const newCharacter = {
-          id: Date.now().toString(),
-          image: characterSource,
-          isAddButton: false,
-        };
-        return [addButton, newCharacter, ...others];
-      });
-    }
-  }, [route.params?.characterData]);
 
   const handleAddCharacter = () => {
-    navigation.navigate('GenderRelationshipPicker');
+    navigation.navigate('GenderRelationshipPicker',{ userId });
   };
   
   const handleDeleteCharacter = (id) => {
@@ -78,6 +76,7 @@ export default function RoleList() {
       ]
     );
   };
+
 
   const renderItem = ({ item, index }) => {
     const isLeft = index % 2 === 0;
@@ -102,13 +101,21 @@ export default function RoleList() {
     return (
       <TouchableOpacity
         style={boxStyle}
-        onPress={() => navigation.navigate('MainScreen')}
+        onPress={() => navigation.navigate('MainScreen', { characterId: item.id, userId })}
         onLongPress={() => handleDeleteCharacter(item.id)}
       >
-        <Image source={item.image} style={styles.characterImage} />
+        <Image source={{ uri: item.imageUri }} style={styles.characterImage} />
       </TouchableOpacity>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#a97c50" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -131,7 +138,8 @@ export default function RoleList() {
         contentContainerStyle={[
           styles.listContent,
           isSingleItem && { paddingLeft: 100 }, // 👈 這一行是關鍵
-        ]}      />
+        ]}
+      />
       {/* 底部提示字 */}
       <Text style={styles.footerHint}>長按角色卡片可刪除角色</Text>
 

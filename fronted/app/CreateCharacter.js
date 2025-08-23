@@ -7,17 +7,19 @@ import {
   TouchableWithoutFeedback,
   View,
   StyleSheet,
+  Alert,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function CreateCharacter() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { gender, relationship, name } = route.params || {};
+  const { gender, relationship, name, userId, clothingStyle, pitch, speed } = route.params || {};
   const [audioFileName, setAudioFileName] = useState('');
   const [isAudioReady, setIsAudioReady] = useState(false);
   const [occupation, setOccupation] = useState('');
@@ -28,6 +30,20 @@ export default function CreateCharacter() {
   const [meetingContext, setMeetingContext] = useState('');
   const [relationshipProgress, setRelationshipProgress] = useState('');
 
+  useEffect(() => {
+    if (clothingStyle) {
+      console.log("從 AppearanceSettingScreen 傳來的 clothingStyle:", clothingStyle);
+      // 如果要顯示或特別處理，可以在這裡執行
+    }
+  }, [clothingStyle]);
+
+  useEffect(() => {
+    if (pitch !== undefined && speed !== undefined) {
+      console.log("從 VoiceSettingScreen 傳來的 pitch:", pitch);
+      console.log("從 VoiceSettingScreen 傳來的 speed:", speed);
+      // 這裡可以放其他要做的事情，比如更新UI或觸發副作用
+    }
+  }, [pitch, speed]);
 
   const isAnyFieldEmpty = () => {
     return (
@@ -41,6 +57,146 @@ export default function CreateCharacter() {
     );
   };
 
+  const handleCreateCharacter = async () => {
+    if (isAnyFieldEmpty()) {
+      Alert.alert('請填寫所有欄位');
+      return;
+    }
+
+    const characterData = {
+      gender,
+      relationship,
+      name,
+      age,
+      occupation,
+      personality,
+      skills,
+      speaking_style: speakingStyle,
+      meeting_context: meetingContext,
+      relationship_stage: relationshipProgress, // 注意資料庫欄位名稱
+    };
+
+    console.log('🌐createcharacter API call to login...');
+    try {
+      // 1️⃣ 建立角色
+      const response = await fetch(API_ENDPOINTS.CREATE_CHARACTER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // 這裡 user_id 你要改成實際的或固定值 // ????
+        body: JSON.stringify({ user_id:userId, ...characterData }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('錯誤', data.error || '建立角色失敗');
+        return;
+      }
+
+      const characterId = data.character_id;
+      console.log("✅ 角色建立成功 ID:", characterId);
+
+      // 2️⃣ 更新 clothing_style（如果有）
+      if (clothingStyle) {
+        console.log("🪡 更新角色服裝風格:", clothingStyle);
+        const updateResponse = await fetch(API_ENDPOINTS.UPDATE_CLOTHING_STYLE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character_id: characterId,
+            clothing_style: clothingStyle
+          }),
+        });
+
+        const updateData = await updateResponse.json();
+        if (!updateResponse.ok) {
+          console.error("❌ 更新服裝風格失敗:", updateData);
+        } else {
+          console.log("🎯 服裝風格更新成功:", updateData);
+        }
+      }
+
+      try {
+        console.log("🖼️ 更新外觀路徑...");
+        const appearanceResponse = await fetch(API_ENDPOINTS.UPDATE_APPEARANCE_PATH, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character_id: characterId }),
+        });
+
+        const appearanceData = await appearanceResponse.json();
+        if (!appearanceResponse.ok || !appearanceData.success) {
+          console.error("❌ 更新外觀路徑失敗:", appearanceData);
+        } else {
+          console.log("✅ 外觀路徑更新成功:", appearanceData);
+        }
+      } catch (err) {
+        console.error("❌ 更新外觀路徑出現錯誤:", err);
+      }
+
+      // 3️⃣ 更新 pitch 和 speed（如果有）
+      if (pitch && speed ) {
+        console.log(" 🎵更新角色音高、語速:", speed, "和", pitch);
+        const updateVoiceRes = await fetch(API_ENDPOINTS.UPDATE_PITCH_SPEED, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character_id: characterId,
+            pitch,
+            speed,
+          }),
+        });
+
+        const updateVoiceData = await updateVoiceRes.json();
+        if (!updateVoiceRes.ok) {
+          console.error("❌ 更新音高與語速失敗:", updateVoiceData);
+        } else {
+          console.log("🎯 更新音高與語速成功:", updateVoiceData);
+        }
+      }
+
+      try {
+        console.log("🔊 更新語音路徑...");
+        const voicePathRes = await fetch(API_ENDPOINTS.UPDATE_VOICE_PATH, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character_id: characterId }),
+        });
+        const voicePathData = await voicePathRes.json();
+        if (!voicePathRes.ok || !voicePathData.success)
+          console.error("❌ 更新語音路徑失敗:", voicePathData);
+        else console.log("✅ 語音路徑更新成功:", voicePathData);
+      } catch (err) {
+        console.error("❌ 更新語音路徑出現錯誤:", err);
+      }
+
+      // 4️⃣ 更新人物情緒圖片路徑進資料庫
+      try {
+        console.log("🎞️ 更新動畫路徑...");
+        const animationRes = await fetch(API_ENDPOINTS.UPDATE_ANIMATION_PATH, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character_id: characterId }),
+        });
+        const animationData = await animationRes.json();
+        if (!animationRes.ok || !animationData.success)
+          console.error("❌ 更新動畫路徑失敗:", animationData);
+        else console.log("✅ 更新動畫路徑成功:", animationData);
+      } catch (err) {
+        console.error("❌ 更新動畫路徑出現錯誤:", err);
+      }
+    
+
+      // 5️⃣ 導回角色列表
+      Alert.alert('成功', '角色已建立');
+      navigation.navigate('RoleList', { userId });
+
+    } catch (error) {
+      Alert.alert('錯誤', '無法連接伺服器');
+      console.error(error);
+    }
+  };
+  
   return (
     <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: '#efe2d8' }} // 這裡設定背景色，避免彈出時是白的
@@ -71,7 +227,7 @@ export default function CreateCharacter() {
 
         <TouchableOpacity
           style={styles.settingButton}
-          onPress={() => navigation.navigate('AppearanceSettingScreen')}
+          onPress={() => navigation.navigate('AppearanceSettingScreen', { gender, relationship, name, userId })}
         >
           <Text style={styles.plus}>＋</Text>
           <Text style={styles.buttonText}>形象設定</Text>
@@ -81,10 +237,7 @@ export default function CreateCharacter() {
         <TouchableOpacity
           style={styles.settingButton}
           onPress={() => {
-            navigation.navigate('VoiceSettingScreen', {
-              name: name,
-              gender: gender
-            });
+            navigation.navigate('VoiceSettingScreen', { gender, relationship, name, userId, clothingStyle });
             setIsAudioReady(true);
             setAudioFileName('角色名稱.mp3');
           }}
@@ -185,26 +338,7 @@ export default function CreateCharacter() {
         {/* 確認創建 */}
         <TouchableOpacity
           style={styles.confirmButton}
-          onPress={() => {
-            if (isAnyFieldEmpty()) {
-              alert('請填寫所有欄位');
-              return;
-            }
-            const characterData = {
-              gender,
-              relationship,
-              name,
-              age,
-              occupation,
-              personality,
-              skills,
-              speakingStyle,
-              meetingContext,
-              relationshipProgress,
-            };
-            console.log('確認創建', characterData);
-            navigation.navigate('RoleList', { characterData });
-          }}
+          onPress={handleCreateCharacter}
         >
           <Text style={styles.confirmText}>確認創建</Text>
         </TouchableOpacity>
@@ -215,7 +349,7 @@ export default function CreateCharacter() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 40,
+    paddingTop: 25,
     paddingBottom: 40,
     paddingHorizontal: 25,
     backgroundColor: '#efe2d8',
@@ -233,8 +367,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 30,
-    left: 0,
+    top: 45,
+    left: 3,
     backgroundColor: '#000',
     borderRadius: 15,
     padding: 6,

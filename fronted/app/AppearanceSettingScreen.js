@@ -17,7 +17,7 @@ export default function AppearanceSettingScreen() {
   const VIDEO_API_URL = "https://0828e917876f.ngrok-free.app";
   const navigation = useNavigation();
   const route = useRoute();
-  const {gender} = route.params || {};
+  const {gender, relationship, name, userId} = route.params || {};
   const [imageUploaded, setImageUploaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generatedResult, setGeneratedResult] = useState(false);
@@ -100,8 +100,8 @@ const handleGenerateResult = async () => {
 
     // ✅ 成功生成外觀後，自動呼叫 generate-emotion
     const emotionPayload = {
-      userId: "test2",      // 你前端保存的使用者名稱
-      character_name: "金珉奎", // 角色名稱
+      userId: userId,      // 你前端保存的使用者名稱
+      name: name, // 角色名稱
     };
 
   //   const emotionResponse = await fetch(API_ENDPOINTS.GENERATE_EMOTION, {
@@ -118,8 +118,8 @@ const handleGenerateResult = async () => {
   //   console.log('生成表情結果:', emotionResult);
 
   //   const videoPayload = {
-  //   username: "test2",
-  //   character_name: "金珉奎",
+  //   username: userId,,
+  //   character_name: name,
   //   colab_url: VIDEO_API_URL
   // };
 

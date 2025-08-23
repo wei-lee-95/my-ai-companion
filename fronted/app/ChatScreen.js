@@ -25,10 +25,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styles } from '../style/chatscreenstyle';
 import characterImage from '../assets/full_body.png';
-import { API_ENDPOINTS } from '../../fronted/apiConfig';
+import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function ChatScreen() {
+    const route = useRoute();
+  const { characterId, userId, name } = route.params; //從mainscreen來的
+
   const [messages, setMessages] = useState([]);
+  const [avatarUri, setAvatarUri] = useState(null);
   const [input, setInput] = useState('');
   const flatListRef = useRef(null);
   const navigation = useNavigation();
@@ -46,41 +50,123 @@ export default function ChatScreen() {
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [messageToSave, setMessageToSave] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const memoryCategories = [
-    { key: 'anniversary', icon: '❤️', title: '紀念日' },
-    { key: 'event', icon: '📅', title: '事件' },
-    { key: 'emotion', icon: '😄', title: '情緒' },
-  ];
+  //const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [memoryCategories, setMemoryCategories] = useState([]);
 
+  const [oocModalVisible, setOocModalVisible] = useState(false);
+  const [oocInput, setOocInput] = useState('');  // 用來存 OOC 輸入內容
+
+
+  useEffect(() => {
+    async function fetchAvatar() {
+      try {
+        const res = await fetch(`${API_ENDPOINTS.GET_IMAGE}?characterId=${characterId}`);
+        const data = await res.json();
+        if (data.success && data.roles && data.roles.length > 0) {
+          setAvatarUri(data.roles[0].avatar_image_path);
+          console.log('大頭貼路徑:', data.roles[0].avatar_image_path);
+        } else {
+          console.warn('找不到 avatar 圖片或後端錯誤', data);
+        }
+      } catch (error) {
+        console.error('抓 avatar 圖片失敗', error);
+      }
+    }
+    fetchAvatar();
+  }, [characterId]);
+
+  useEffect(() => {
+    if (!characterId) return;
+
+    setLoading(true);
+    fetch(`${API_ENDPOINTS.GET_MEMORY_CATEGORIES}?character_id=${characterId}`)
+      .then(res => res.json())
+      .then(json => {
+        const cats = json.categories.map(item => ({
+          key: item.id,  // key 直接用 category 名稱
+          title: item.category,
+          icon: item.icon || '', // icon 直接用資料庫的 icon
+        }));
+        setMemoryCategories(cats);
+      })
+      .catch(err => {
+        console.error('取得分類失敗', err);
+      })
+  }, [characterId]);
+
+  
   const handleSend = () => {
     if (!input.trim()) return;
 
+    // 1. 先建立使用者訊息物件 (尚無 id)
     const newMessage = {
       sender: 'user',
       text: input,
       time: Date.now(),
       replyTo: replyingTo ?? undefined,
     };
-    setMessages(prev => [...prev, newMessage]);
 
-    fetch(API_ENDPOINTS.CHAT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        const reply = {
-          sender: 'bot',
-          text: data.reply,
-          time: Date.now(),
-        };
-        setMessages(prev => [...prev, reply]);
-      })
-      .catch(err => console.error('發送訊息失敗:', err));
+    // 2. 先在前端顯示使用者訊息 (尚無 id)
+    setMessages(prev => [...prev, newMessage]);
 
     setInput('');
     setReplyingTo(null);
+
+    // 3. 發送到後端
+    fetch(API_ENDPOINTS.CHAT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        message: input,
+        character_id: characterId,
+        user_id: userId,
+        name: name,
+      }),
+    })
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`伺服器錯誤：${res.status} ${text}`);
+        } 
+        return res.json();
+      })
+      .then(data => {
+        if (!data.reply || !data.saved_messages) {
+          throw new Error('回應格式錯誤，缺少 reply 或 saved_messages');
+        }
+
+
+        // 後端回傳的 saved_messages 中會有剛剛 user 跟 assistant 的訊息和各自的 id
+        // 先找出 user 訊息與 assistant 回覆
+        const savedUserMsg = data.saved_messages.find(m => m.role === 'user' && m.content === input);
+        const savedBotMsg = data.saved_messages.find(m => m.role === 'assistant' && m.content === data.reply);
+
+        // 4. 更新 messages 狀態，把對應訊息加上 id
+        setMessages(prev => {
+          // 把原本的訊息陣列中，替換最後兩筆訊息（剛剛推進的 user 與 bot）
+          const newMsgs = [...prev];
+
+          // user 訊息一般在倒數第二筆 (你剛加入)
+          const userIndex = newMsgs.findIndex(m => m.sender === 'user' && m.text === input);
+          if (userIndex !== -1 && savedUserMsg) {
+            newMsgs[userIndex] = { ...newMsgs[userIndex], id: savedUserMsg.id };
+          }
+
+          // 加入 assistant 訊息
+          newMsgs.push({
+            sender: 'bot',
+            text: data.reply,
+            time: Date.now(),
+            id: savedBotMsg ? savedBotMsg.id : undefined,
+          });
+
+          return newMsgs;
+        });
+      })
+      .catch(err => {
+        console.error('發送訊息失敗:', err);
+      });
   };
 
   const handlePickImage = async () => {
@@ -111,11 +197,43 @@ export default function ChatScreen() {
         const response = await fetch(API_ENDPOINTS.CHAT_IMAGE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64WithMime }),
+          body: JSON.stringify({ 
+            image_base64: base64WithMime,
+            character_id: characterId,
+            user_id: userId,
+            name: name,
+          }),
         });
         const data = await response.json();
-        if (response.ok) {
-          setMessages(prev => [...prev, { sender: 'bot', text: data.reply, time: Date.now() }]);
+
+        if (response.ok && data.saved_messages) {
+          setMessages(prev => {
+            const newMsgs = [...prev];
+
+            // 找剛剛 user 圖片訊息 index（用 imageUri 辨識）
+            const idx = newMsgs.findIndex(m => m.sender === 'user' && m.imageUri === imageUri);
+
+            if (idx !== -1) {
+              // 找 user 圖片訊息的 saved_message id (這裡假設 content 是 '[圖片訊息]' 或其他可辨識字串)
+              const userMsgId = data.saved_messages.find(
+                m => m.role === 'user' && m.content === '[圖片訊息]'
+              )?.id;
+
+              if (userMsgId) {
+                newMsgs[idx] = { ...newMsgs[idx], id: userMsgId };
+              }
+            }
+            // 加入 bot 回覆，也帶 id
+            const botMsg = data.saved_messages.find(m => m.role === 'assistant');
+            newMsgs.push({
+              sender: 'bot',
+              text: data.reply,
+              time: Date.now(),
+              id: botMsg ? botMsg.id : undefined,
+            });
+
+            return newMsgs;
+          });
         } else {
           alert('圖片分析失敗');
         }
@@ -155,22 +273,22 @@ export default function ChatScreen() {
         });
       }, 1000);
     } catch (error) {
-  // 印出完整錯誤物件（包含名稱、訊息、stack等）
-  console.error('錄音失敗:', error);
+      // 印出完整錯誤物件（包含名稱、訊息、stack等）
+      console.error('錄音失敗:', error);
   
-  // 如果 error 是 Error 物件，也印出 name 和 message
-  if (error instanceof Error) {
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-  } else {
-    // 非 Error 物件，直接 JSON.stringify
-    console.error('Error detail:', JSON.stringify(error));
-  }
-  
-  setRecordingInstance(null);
-  setIsRecording(false);
-}
+      // 如果 error 是 Error 物件，也印出 name 和 message
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      } else {
+        // 非 Error 物件，直接 JSON.stringify
+        console.error('Error detail:', JSON.stringify(error));
+      }
+    
+      setRecordingInstance(null);
+      setIsRecording(false);
+    }
   };
 
   // 錄音功能停止
@@ -227,23 +345,49 @@ export default function ChatScreen() {
       name: `audio.${fileType}`,
       type: `audio/${fileType}`,
     } );
+
+    // **這裡新增你要傳給後端的欄位**
+    formData.append('character_id', characterId);   // 你要確保這些變數有定義
+    formData.append('user_id', userId);
+    formData.append('name', name);
+
     try {
       const response = await fetch(API_ENDPOINTS.CHAT_VOCAL, {
         method: 'POST',
         body: formData,
+        headers:{}
       });
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.saved_messages) {
+        setMessages(prev => {
+          
+          const newMsgs = [...prev];
 
-        const botReply = {
-          sender: "bot",
-          text: data.reply,
-          time: Date.now(),
-        };
-
-        setMessages(prev => [...prev, botReply]);
+          // 找 user 語音訊息 index（用 audioUri 辨識）
+          const idx = newMsgs.findIndex(m => m.sender === 'user' && m.audioUri === recordedUri);
+          
+          if (idx !== -1) {
+            // 找 user 語音訊息的 saved_message id
+            const userMsgId = data.saved_messages.find(
+              m => m.role === 'user' && m.content === '[語音訊息]'
+            )?.id;
+            if (userMsgId) {
+              newMsgs[idx] = { ...newMsgs[idx], id: userMsgId };
+            }
+          }
+          // 加入 bot 回覆，也帶 id
+          const botMsg = data.saved_messages.find(m => m.role === 'assistant');
+          newMsgs.push({
+            sender: 'bot',
+            text: data.reply,
+            time: Date.now(),
+            id: botMsg ? botMsg.id : undefined,
+          });
+          
+          return newMsgs;
+        });
       } else {
         console.error('後端錯誤', data.error);
       }
@@ -257,49 +401,148 @@ export default function ChatScreen() {
 
   //播放錄音的功能
   const playAudio = async (uri) => {
-  try {
-    // 如果已經有播放，先停掉
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      setSound(null);
-      setPlayingUri(null);
-      if (playingUri === uri) return; // 如果點擊的是正在播放的音，則停止後不重新播放
+    try {
+      // 如果已經有播放，先停掉
+      if (sound) {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+        setSound(null);
+        setPlayingUri(null);
+        if (playingUri === uri) return; // 如果點擊的是正在播放的音，則停止後不重新播放
+      }
+
+      const { sound: newSound, status } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: true }
+      );
+
+      setSound(newSound);
+      setPlayingUri(uri);
+
+      // 播放結束事件
+      newSound.setOnPlaybackStatusUpdate((playbackStatus) => {
+        if (!playbackStatus.isLoaded) {
+          setPlayingUri(null);
+          setSound(null);
+          return;
+        }
+        if (!playbackStatus.isPlaying && playbackStatus.didJustFinish) {
+          setPlayingUri(null);
+          setSound(null);
+        }
+      });
+    } catch (error) {
+      console.error('播放失敗', error);
     }
-
-    const { sound: newSound, status } = await Audio.Sound.createAsync(
-      { uri },
-      { shouldPlay: true }
-    );
-
-    setSound(newSound);
-    setPlayingUri(uri);
-
-    // 播放結束事件
-    newSound.setOnPlaybackStatusUpdate((playbackStatus) => {
-      if (!playbackStatus.isLoaded) {
-        setPlayingUri(null);
-        setSound(null);
-        return;
-      }
-      if (!playbackStatus.isPlaying && playbackStatus.didJustFinish) {
-        setPlayingUri(null);
-        setSound(null);
-      }
-    });
-  } catch (error) {
-    console.error('播放失敗', error);
-  }
   };
 
+
+  const handleSelectMemoryCategory = (cat) => {
+    setSelectedCategory(cat.key);
+    setSaveModalVisible(false);
+    
+    // 用 id 找出 focus 的 index
+    const focusIndex = messages.findIndex(m => m.id === messageToSave.id);
+
+    // 取得前 4 則 context（只取文字訊息）
+    const contextMessages = messages
+      .slice(Math.max(0, focusIndex - 4), focusIndex)
+      .filter(m => m.text);
+
+    // 傳送給 Flask 後端的 API
+    fetch(API_ENDPOINTS.GENERATE_MEMORY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category_id: cat.key,                        
+        focus: messageToSave.text,                  
+        context: contextMessages.map(m => m.text),  
+        character_id: characterId,                  
+        name: name,                                 
+        category: cat.title,                        
+        focus_message_id: messageToSave.id,         
+        user_id: userId
+      })
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText);
+        }
+        const json = await res.json();
+        console.log('✅ 標題產生成功：', json.title);
+
+        navigation.navigate('MemoryDetail', {
+          category_title: cat.title,
+          icon: cat.icon,
+          fromChat: true,
+          memory_id: json.memory_id,
+          pre_mood: json.mood,
+          pre_location: json.location,
+          pre_time_of_day: json.time_of_day,
+          chatContent: messageToSave,
+          memory_title: json.title,
+          date: json.date,
+        });
+      })
+      .catch(err => {
+        console.error('❌ 記憶送出失敗', err);
+      });
+  };
+
+  const handleSendOoc = async () => {
+    if (!messageToSave || !oocInput.trim()) {
+      Alert.alert("提醒", "請輸入修改內容");
+      return;
+    }
+
+    // 關閉 modal
+    setOocModalVisible(false);
+
+    try {
+      const res = await fetch(API_ENDPOINTS.OOC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message_id: messageToSave.id,  // 使用者長按的訊息 ID
+          ooc_text: oocInput,            // 使用者輸入的文字
+          character_id: characterId,
+          user_id: userId
+        })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      const json = await res.json();
+      console.log("✅ OOC 校正送出成功:", json);
+
+      // 可選：將修改的文字直接更新到前端訊息列表
+      setMessages(prev => prev.map(m => 
+        m.id === messageToSave.id ? { ...m, text: oocInput } : m
+      ));
+
+      setOocInput(""); // 清空輸入框
+
+    } catch (err) {
+      console.error("❌ OOC 校正失敗", err);
+      Alert.alert("錯誤", "OOC 校正送出失敗");
+    }
+  };
+  
   // 功能按鈕行為（你可以改成你要的邏輯）
   const onCopy = (text) => {
     Clipboard.setString(text);
     setLongPressedMessageIndex(null);
   };
-  const onOoc = (text) => {
-    console.log('OOC', text);
+  const onOoc = (msg) => {
+    console.log('OOC', msg);
     setLongPressedMessageIndex(null);
+    setOocModalVisible(true);  // 顯示 modal
+    setOocInput('');           // 清空輸入框
+    setMessageToSave(msg);
   };
   //圖片文字都可以當input
   const onReply = (msg) => {
@@ -335,10 +578,11 @@ export default function ChatScreen() {
       {!isUser && (
         <View style={{ width: 34, alignItems: 'flex-end' }}>
         {showAvatar ? (
-          <Image
-          source={require('../assets/full_body.png')} 
-          style={styles.avatar}
-          />
+          avatarUri ? (
+            <Image source={{ uri: `${BASE_URL}/${avatarUri}` }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: '#ccc' }]} />
+          )
         ) : (
           <View style={{ width: 40, height: 40 }} /> // 透明佔位
         )}
@@ -397,7 +641,7 @@ export default function ChatScreen() {
             <Text style={styles.floatingButtonText}>複製</Text>
             </TouchableOpacity>
             <View style={styles.floatingDivider} />
-            <TouchableOpacity style={styles.floatingButton} onPress={() => onOoc(item.text)}>
+            <TouchableOpacity style={styles.floatingButton} onPress={() => onOoc(item)}>
             <Text style={styles.floatingButtonText}>OOC</Text>
             </TouchableOpacity>
             <View style={styles.floatingDivider} />
@@ -431,7 +675,7 @@ export default function ChatScreen() {
         <View style={styles.inner}>
           {/* 區塊 1：上方標題區 */}
           <View style={styles.header}>
-            <Text style={{ fontSize: 20, fontWeight: '600' }}>金珉奎</Text>
+            <Text style={{ fontSize: 20, fontWeight: '600' }}>{name}</Text> {/*要改成從資料庫拿*/}
           </View>
 
           <TouchableOpacity
@@ -540,85 +784,14 @@ export default function ChatScreen() {
 
       {memoryCategories.map((cat) => (
         <TouchableOpacity
-          key={cat.key}
+          key={cat.title}
           style={{
             paddingVertical: 10,
             borderBottomWidth: 1,
             borderBottomColor: '#eee',
           }}
-
-        onPress={() => {
-          setSelectedCategory(cat.key);
-          setSaveModalVisible(false);
-
-          const now = new Date();
-          const event = {
-            key: Date.now().toString(),
-            time: now.getTime(), // 儲存 timestamp
-            date: `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`, // 顯示用
-            chatContent: messageToSave,
-          };
-          
-          // 找出 focus 的 index（確保是正確那一筆）
-          const focusIndex = messages.findIndex(
-            m =>
-              m.text === messageToSave?.text &&
-              m.time === messageToSave?.time &&
-              m.sender === messageToSave?.sender
-          );
-
-          // 取得前 4 則 context（只取文字訊息）
-          const contextMessages = messages.slice(Math.max(0, focusIndex - 4), focusIndex).filter(m => m.text);
-
-          // 傳送給 Flask 後端的 API
-          fetch(API_ENDPOINTS.GENERATE_MEMORY, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              category: cat.title,                // 顯示用類別名稱：紀念日/事件/情緒
-              focus: messageToSave.text,         // 長按儲存的那句話
-              context: contextMessages.map(m => m.text), // 前四句
-              character_name: "金珉奎"
-            })
-          })
-            .then(async (res) => {
-              const text = await res.text();
-              try {
-                const json = JSON.parse(text);
-                console.log('✅ 標題產生成功：', json.title);
-
-                const updatedEvent = {
-                  ...event,
-                  title: json.title,
-                  focus: messageToSave.text,
-                };
-
-                navigation.navigate('MemoryDetail', {
-                  title:
-                    cat.key === 'anniversary'
-                      ? '紀念日'
-                      : cat.key === 'event'
-                      ? '事件'
-                      : '情緒',
-                  icon:
-                    cat.key === 'anniversary'
-                      ? '❤️'
-                      : cat.key === 'event'
-                      ? '📅'
-                      : '😄',
-                  event: updatedEvent,
-                  fromChat: true,
-                });
-              } catch (err) {
-                console.error('❌ 回傳非 JSON，實際內容如下：');
-                console.log(text);
-              }
-            })
-            .catch(err => {
-              console.error('❌ 記憶送出失敗', err);
-            });
-        }}
-      >
+          onPress={() => handleSelectMemoryCategory(cat)}
+        >
             <Text style={{ fontSize: 16 }}>{cat.icon} {cat.title}</Text>
           </TouchableOpacity>
         ))}
@@ -629,6 +802,36 @@ export default function ChatScreen() {
             >
               <Text style={{ color: '#666' }}>取消</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      <Modal visible={oocModalVisible} transparent animationType="fade">
+        <View style={styles.modalbackground}>
+          <View style={styles.modalinfo}>
+            <Text style={styles.modaltitle}> 修正回覆 </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 8,
+                padding: 10,
+                fontSize: 16,
+                color: '#333',
+              }}
+              placeholder="我希望的回覆內容是..."
+              placeholderTextColor="#aaa"  // 淺灰色
+              value={oocInput}
+              onChangeText={setOocInput}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 15 }}>
+              <TouchableOpacity onPress={() => setOocModalVisible(false)} style={{ marginRight: 15 }}>
+                <Text style={{ color: '#c28261ff', fontSize: 16 }}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSendOoc} >
+                <Text style={{ color: '#4f3723ff', fontSize: 16 }}>送出</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

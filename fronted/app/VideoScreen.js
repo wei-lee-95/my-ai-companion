@@ -9,13 +9,15 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Video } from 'expo-av';
 
 import useMicAutoRecorder from '../hook/useMicAutoRecorder';
-import { API_ENDPOINTS } from '../../fronted/apiConfig';
+import { API_ENDPOINTS, BASE_URL } from '../../fronted/apiConfig';
 import characterImage from '../assets/video-placeholder.png';
 
 export default function VideoScreen() {
 
   const defaultVideo = require('../assets/no1.mp4'); // 確定影片在 assets 目錄
   const navigation = useNavigation();
+  const route = useRoute();
+  const { characterId, userId, name } = route.params;
   const [seconds, setSeconds] = useState(0);
   const videoRef = useRef(null);
   const [videoUri, setVideoUri] = useState(null); 
@@ -113,7 +115,10 @@ export default function VideoScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           voice: uploadVoiceResult.corrected_text,
-          image: uploadImageResult
+          image: uploadImageResult,
+          userId: userId,
+          character_id: characterId,
+          name: name,
         }),
       });
       const replyData = await replyRes.json();

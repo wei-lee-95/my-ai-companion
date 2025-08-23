@@ -768,6 +768,14 @@ class ChatModel:
         return self.db.execute_query(sql, (message_id,))
     
 
+def update_message(self, ooc_text: str, message_id: int) -> int:
+        """根據 message_id 修改 content 內容 變成 ooc_text"""
+        sql ="""
+        UPDATE chat_messages
+        SET content = ?
+        WHERE id = ?
+        """
+        return self.db.execute_update(sql, (ooc_text, message_id))
 class VedioModel:
     """視訊資料模型"""
 

@@ -8,6 +8,8 @@ import cv2
 import numpy as np
 from PIL import Image
 from rembg import remove
+from database.database import user_model
+from typing import Optional
 
 webui_server_url = "http://192.168.0.131:7860"  #通常是7860
 
@@ -199,3 +201,17 @@ def build_custom_prompt(outfit_style):
 
     return prompt, negative_prompt
 
+
+def get_username(userId:int) -> Optional[str]: 
+    result = user_model.get_user_by_id(userId)
+    if not result:
+        print(f"❌ 找不到使用者 ID {userId}")
+        return None
+
+    username = result.get('username')
+    if not username:
+        print(f"❌ 使用者 ID {userId} 沒有 username")
+        return None
+    
+    print(f"使用者名稱為{username}")
+    return username

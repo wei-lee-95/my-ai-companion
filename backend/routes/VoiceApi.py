@@ -113,7 +113,7 @@ def generate_voice():
     model_name = data.get('model_name', 'Mingyu')
 
     model_folder = os.path.join(BASE_DIR, "assets", "Voice", "Models", model_name)
-    output_dir = os.path.join(BASE_DIR, "Outputs", "Voice")
+    output_dir = os.path.join(BASE_DIR, "outputs", "Voice")
     os.makedirs(output_dir, exist_ok=True)
 
     tts_path = os.path.join(output_dir, 'tts_output.wav')

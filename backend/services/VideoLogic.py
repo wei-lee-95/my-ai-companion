@@ -15,7 +15,7 @@ import os
 import traceback
 import json
 from flask import jsonify
-from services.ChatLogic import load_profile, load_stats, save_stats, load_chat_history, save_chat_history, generate_prompt, extract_reply_text, parse_stats
+from services.ChatLogic import get_character_info, get_character_personalities_info, get_db_stats, save_db_stats, save_chat_histories, generate_prompt, extract_reply_text, parse_stats, get_chat_histories_by_sessions
 
 # 宣告全域變數
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -34,24 +34,39 @@ def extract_stats(reply_text):
         print(f"⚠️ STATS 解析錯誤: {str(e)}")
         return None
 
-def process_chat_response(user_input, context):
+def process_chat_response(user_id, character_id, name, user_input, context=None):
     """處理聊天回應（含後端角色資料與 context 資訊）"""
+    global messages
+
+    # 載入角色profile
+    character_info_res = get_character_info(character_id) 
+    if not character_info_res["success"]:
+        return jsonify({"error": character_info_res["message"]}), 404
+    profile = character_info_res["data"]
     
+    personality_res = get_character_personalities_info(character_id)
+    if not personality_res["success"]:
+        return jsonify({"error": personality_res["message"]}), 404
+    personality = personality_res["data"]
+    
+    profile.update(personality)
+    profile["user_name"] = name
+    profile["relationship_progress"] = profile.get("relationship_stage", "初識")
 
-    messages = []
+    # 載入角色stats
+    stats_res = get_db_stats(character_id)
+    if not stats_res["success"]:
+        return jsonify({"error": stats_res["message"]}), 404
+    stats = stats_res["data"]
 
-    character_name = "金珉奎"  # ex: chat_histories/mingyu_profile.json
+    # 取得聊天歷史 (限制最新 50 條)
+    chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
+    if not chat_histories_res["success"]:
+        return jsonify({"error": chat_histories_res["message"]}), 404
+    messages = chat_histories_res["data"]
 
-    print("user_input type:", type(user_input), user_input)
-    print("context type:", type(context), context)
-    print("messages type:", type(messages), messages)
 
-    # 載入角色資料
-    profile = load_profile(character_name)
-    stats = load_stats(character_name)
-    chat_histories = load_chat_history(character_name)
-
-    print(f"\n小雲（語音）：{user_input}", flush=True)
+    print(f"\使用者ID={user_id}（語音）：{user_input}", flush=True)
 
     if context:
         context_str = f"{context.get('object', '')} {context.get('emotion', '')}".strip()
@@ -116,22 +131,20 @@ def process_chat_response(user_input, context):
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=local_messages,
+            messages=messages,
             temperature=0.7
         )
         full_reply = response.choices[0].message.content
         reply = extract_reply_text(full_reply)
 
-        print(f"\n金珉奎：{reply}", flush=True)
+        print(f"\n{name}：{reply}", flush=True)
 
-        # 建立單筆對話物件
-        chat_pair = {
-            "user": {"role": "user", "content": user_input},
-            "assistant": {"role": "assistant", "content": reply}
-        }
-
-        save_chat_history(character_name, chat_pair)
-
+        # 最新兩筆訊息，user 跟 assistant
+        latest_messages = [
+            {"role": "user", "content": f"{user_input} {context_str}".strip()},
+            {"role": "assistant", "content": reply},
+        ]
+        save_res = save_chat_histories(character_id, user_id, messages=latest_messages)
 
         # 嘗試更新 stats
         stats_new = extract_stats(full_reply)
@@ -143,16 +156,15 @@ def process_chat_response(user_input, context):
                     "affection": str(max(0, min(100, affection_new))),
                     "last_chat_time": datetime.now().isoformat()
                 }
-                save_stats(character_name, stats_dict)
+                save_stats_res = save_db_stats(character_id, stats_data=stats_dict)
             except Exception as e:
                 print(f"⚠️ 無法更新 stats: {str(e)}")
         
-        # ✅ **回傳 dict，不 jsonify**
-        return {
+        return jsonify({
             "reply": reply,
-            "user": chat_pair["user"],
-            "assistant": chat_pair["assistant"]
-        }
+            "saved_messages": save_res.get("saved_messages",[]),
+            "stats_save": save_stats_res,
+        })
 
     except Exception as e:
         print(f"❌ GPT 回應錯誤: {str(e)}")

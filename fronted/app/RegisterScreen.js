@@ -42,32 +42,32 @@ export default function RegisterScreen() {
 
     console.log('🌐 Making API call to register...');
     Alert.alert('註冊成功', '請返回登入畫面登入');
-    navigation.goBack();
-    // try {
-    //   const response = await fetch(API_ENDPOINTS.REGISTER, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       name,
-    //       age: parseInt(age),
-    //       account,
-    //       password
-    //     })
-    //   });
 
-    //   const data = await response.json();
-    //   console.log('📥 Register response:', { status: response.status, data });
+    try {
+      const response = await fetch(API_ENDPOINTS.REGISTER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          age: parseInt(age),
+          account,
+          password
+        })
+      });
+
+      const data = await response.json();
+      console.log('📥 Register response:', { status: response.status, data });
       
-    //   if (response.ok) {
-    //     Alert.alert('註冊成功', '請返回登入畫面登入');
-    //     navigation.goBack();
-    //   } else {
-    //     Alert.alert('註冊失敗', data.error || '請稍後再試');
-    //   }
-    // } catch (error) {
-    //   console.error('❌ Register error:', error);
-    //   Alert.alert('錯誤', `無法連接伺服器: ${error.message}`);
-    // }
+      if (response.ok) {
+        Alert.alert('註冊成功', '請返回登入畫面登入');
+        navigation.goBack();
+      } else {
+        Alert.alert('註冊失敗', data.error || '請稍後再試');
+      }
+    } catch (error) {
+      console.error('❌ Register error:', error);
+      Alert.alert('錯誤', `無法連接伺服器: ${error.message}`);
+    }
   };
 
   return (
