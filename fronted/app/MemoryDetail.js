@@ -268,26 +268,23 @@ export default function MemoryDetail() {
           <Text style={styles.backButtonText}>≪</Text>
         </TouchableOpacity>
 
-        <Text style={styles.absoluteTitle}>{title}</Text>
+        <Text style={styles.absoluteTitle}>{memoryTitle}</Text>
 
         <View style={styles.backButtonPlaceholder} />
       </View>
 
       <Text style={styles.icon}>{icon}</Text>
-      <Text style={styles.date}>{event?.date}</Text>
-      <Text style={styles.event}>{eventTitle}</Text>
-        {/* GPT 生成的標題（若有） */}
-        {event?.title && (
-          <Text style={styles.generatedTitle}>{event.title}</Text>
-        )}
+      <Text style={styles.date}>{date}</Text>
+      <Text style={styles.event}>{memoryTitle}</Text>
+
 
     <View style={styles.chatContainer}>
-      {event?.chatContent?.imageUri ? (
-        <Image source={{ uri: event?.chatContent.imageUri }} style={{ width: 200, height: 200, borderRadius: 10 }} />
-      ) : event?.chatContent?.audioUri ? (
+      {content?.chatContent?.imageUri ? (
+        <Image source={{ uri: content?.chatContent.imageUri }} style={{ width: 200, height: 200, borderRadius: 10 }} />
+      ) : content?.chatContent?.audioUri ? (
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center' }}
-          onPress={() => playAudio(event?.chatContent.audioUri)}
+          onPress={() => playAudio(content?.chatContent.audioUri)}
         >
           <Ionicons
             name={playing ? 'pause-circle' : 'play-circle'}
@@ -297,7 +294,7 @@ export default function MemoryDetail() {
           <Ionicons name="pulse" size={24} color="#555" style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       ) : (
-        <Text>{event?.chatContent?.text || '（無內容）'}</Text>
+        <Text>{content?.text || content || '（無內容）'}</Text>
       )}
       <View style={styles.triangleShadow} />
       <View style={styles.triangle} />
@@ -347,8 +344,8 @@ export default function MemoryDetail() {
             <TextInput
               style={styles.input}
               placeholder="事件"
-              value={editedEventTitle}
-              onChangeText={setEditedEventTitle}
+              value={editedMemoryTitle}
+              onChangeText={setEditedMemoryTitle}
             />
 
             <View style={styles.dropdownRow}>

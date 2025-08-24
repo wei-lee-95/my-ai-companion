@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute} from '@react-navigation/native';
 import { useState, useEffect } from 'react';
@@ -56,7 +56,8 @@ export default function MainScreen() {
       <View style={styles.sideButtons}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={() => navigation.navigate('PhotoUploadScreen',{characterId, name} )}>          <Fontisto name="photograph" size={30} color="#555" />
+          onPress={() => navigation.navigate('PhotoUploadScreen',{characterId, name} )}>          
+          <Fontisto name="photograph" size={30} color="#555" />
         </TouchableOpacity>
       </View>
 
@@ -68,7 +69,7 @@ export default function MainScreen() {
           </View>
           <Text style={styles.label}>角色</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('MemoryStoreScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate('MemoryStoreScreen',{ characterId, userId, name })}>
           <View style={styles.circleButton}>
             <Ionicons name="calendar-outline" size={35} color="#333" />
           </View>

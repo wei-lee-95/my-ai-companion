@@ -7,6 +7,7 @@ from rembg import remove
 from PIL import Image
 import base64, os
 import time 
+import shutil
 
 appearance_bp = Blueprint('appearance', __name__)
 
@@ -48,10 +49,8 @@ def generate_appearance_girl():
                 return jsonify({"error": f"找不到 username for userId={userId}"}), 400
 
             # 儲存處理後的圖
-            txt2img_dir = os.path.join(BASE_DIR, "outputs", "txt2img")
-            os.makedirs(txt2img_dir, exist_ok=True)
             output_filename = f"{username}_{name}.png"
-            output_path = os.path.join(txt2img_dir, output_filename)
+            output_path = os.path.join(rem_dir, output_filename)
             removed_image.save(output_path)
 
             return jsonify({"message": "生成成功"})
@@ -73,6 +72,7 @@ def generate_appearance_boy():
 
     if not image_base64:
         return jsonify({'error': '缺少圖片資料'}), 400
+    
 
     prompt, negative_prompt = build_custom_prompt_boy(outfit_style)
     # 直接用 base64 字串，不用存檔
@@ -88,10 +88,14 @@ def generate_appearance_boy():
             image = Image.open(image_path)
             removed_image = remove(image)
 
+            username = get_username(userId)
+            if not username:
+                return jsonify({"error": f"找不到 username for userId={userId}"}), 400
+
             # 儲存處理後的圖
             txt2img_dir = os.path.join(BASE_DIR, "outputs", "txt2img")
             os.makedirs(txt2img_dir, exist_ok=True)
-            output_filename = f"{userId}_{name}.png"
+            output_filename = f"{username}_{name}.png"
             output_path = os.path.join(txt2img_dir, output_filename)
             removed_image.save(output_path)
 
@@ -162,18 +166,18 @@ def generate_video_route():
     
     data = request.get_json()
     userId = data.get("userId")
-    character_name = data.get("name")
+    name = data.get("name")
     colab_url = data.get("colab_url")
 
-    if not userId or not character_name:
+    if not userId or not name:
         return jsonify({"error": "缺少使用者或角色名稱"}), 400
 
-    username = get_user_by_id(userId)
+    username = get_username(userId)
     if not username:
         return jsonify({"error": f"找不到 username for userId={userId}"}), 400
     
     try:
-        results = generate_videos(username, character_name, colab_url)
+        results = generate_videos(username, name, colab_url)
         return jsonify({"results": results})
     except Exception as e:
         return jsonify({"error": f"影片生成失敗: {str(e)}"}), 500

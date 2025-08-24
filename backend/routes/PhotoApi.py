@@ -18,7 +18,7 @@ def generate():
             return jsonify({"error": "no file uploaded"}), 400
 
         user_prompt = request.form.get("user_prompt", "").strip()
-        character_id = request.form.get("character_id", 2)
+        character_id = request.form.get("characterId")
 
         try:
             # 如果有使用者輸入，統一翻譯成英文（使用 gpt-4-mini）

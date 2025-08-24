@@ -187,7 +187,7 @@ class CharacterModel:
             print(f"[DEBUG] get_character_personality({character_id}) found nothing")
             return None
         
-    def get_username_by_character_id(character_id: int) -> Optional[str]:
+    def get_username_by_character_id(self, character_id: int) -> Optional[str]:
         """根據 character_id 取得對應的 username"""
          
         sql = """

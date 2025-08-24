@@ -6,8 +6,8 @@ import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
-import { useNavigation } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useNavigation, useRoute} from '@react-navigation/native';
+import { useRef, useState, useEffect } from 'react';
 import {
   FlatList,
   Image,

@@ -12,11 +12,13 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { API_ENDPOINTS } from '../../fronted/apiConfig'; 
 
 export default function PhotoUploadScreen() {
+  const route = useRoute();
+  const {characterId} = route.params || {};
   const [image, setImage] = useState(null);
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -46,13 +48,15 @@ export default function PhotoUploadScreen() {
     if (!image) return;
     setLoading(true);
 
-    const formData = new FormData();
+  const formData = new FormData();
     formData.append('file', {
       uri: image.uri,
       name: 'user_photo.jpg',
       type: 'image/jpeg',
     });
-    formData.append('user_prompt', userPrompt);
+  formData.append('user_prompt', userPrompt);
+  formData.append('characterId', characterId); // 確保 characterId 被包含在 formData 中
+  console.log('characterId:', characterId); // 確認 characterId 是否正確傳遞
 
     try {
       const response = await fetch(API_ENDPOINTS.GENERATE, {

@@ -20,8 +20,7 @@ HEADERS = {'x-api-key': API_KEY}
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend
-input_path = os.path.join(BASE_DIR,"outputs/removed/removed_background_boy.png")
-input_path = os.path.abspath(input_path)
+rem_dir = os.path.join(BASE_DIR, 'outputs', 'removed')
 
 def image_file_to_base64(image_path):
     with open(image_path, 'rb') as f:
@@ -30,6 +29,8 @@ def image_file_to_base64(image_path):
 def generate_emotions(user_name, character_name):
     
     # input_path = f"backend/outputs/removed/removed_background_boy.png"
+    input_path = os.path.join(rem_dir, f"{user＿name}_{character_name}.png")
+
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"找不到圖片：{input_path}")
 

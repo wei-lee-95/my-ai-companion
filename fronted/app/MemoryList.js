@@ -1,6 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { API_ENDPOINTS } from '../../fronted/apiConfig';  // 請確認路徑
+
 
 export default function MemoryList() {
   const route = useRoute();
@@ -56,7 +58,7 @@ export default function MemoryList() {
         </TouchableOpacity>
 
         <View style={styles.titleWrapper}>
-          <Text style={styles.pageTitle}>{icon} {title}</Text>
+          <Text style={styles.pageTitle}>{category_icon} {category_title}</Text>
         </View>
 
         <View style={styles.backButtonPlaceholder} />
@@ -65,24 +67,25 @@ export default function MemoryList() {
       {/* 🔸列表 */}
       <View style={styles.listContainer}>
         <FlatList
-          data={localData}
+          data={memories}
+          keyExtractor={(item) => item.memory_id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
                 navigation.navigate('MemoryDetail', {
-                  title,
-                  icon,
-                  event: item,
+                  category_title:category_title,
+                  icon:category_icon,
+                  date: item.date,
+                  memory_id: item.memory_id,
                 });
               }}
             >
               <View style={styles.itemRow}>
-                <Text style={styles.eventText}>{item.event}</Text>
+                <Text style={styles.eventText}>{item.memory_title}</Text>
                 <Text style={styles.dateText}>{item.date}</Text>
               </View>
             </TouchableOpacity>
           )}
-          keyExtractor={(item) => item.key.toString()}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       </View>

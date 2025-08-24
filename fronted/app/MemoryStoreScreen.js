@@ -4,7 +4,7 @@ import {
   StyleSheet, TextInput, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 function formatDate(dateStr) {
@@ -128,9 +128,7 @@ export default function MemoryStoreScreen() {
   };
 
   const renderItem = ({ item }) => {
-  const latestItem = (dataByCategory[item.key] || [])
-    .slice()
-    .sort((a, b) => (b.time || 0) - (a.time || 0))[0];
+  const latestItem = latestMemoriesByCategory[item.id];
 
     return (
       <TouchableOpacity
@@ -150,7 +148,7 @@ export default function MemoryStoreScreen() {
         </View>
         <Text style={styles.cardDate}>
           {latestItem
-            ? `${latestItem.event}｜${formatDate(latestItem.date)}`
+            ? `${latestItem.memory_title}｜${formatDate(latestItem.date)}`
             : '尚無紀錄'}
         </Text>
       </TouchableOpacity>

@@ -54,7 +54,7 @@ def call_api(api_endpoint, **payload):
         )
         
         # 增加超時設置
-        response = urllib.request.urlopen(request, timeout=1000)  # 1000秒超時
+        response = urllib.request.urlopen(request, timeout=10000)  # 1000秒超時
         return json.loads(response.read().decode('utf-8'))
     except urllib.error.URLError as e:
         print(f"API 調用失敗: {str(e)}")
@@ -91,9 +91,9 @@ def generate_with_faceid(face_image_base64, seed, prompt, negative_prompt):
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
-        "seed": seed,  # 隨機種子
+        "seed": 503754738,  # 隨機種子
         "steps": 20,
-        "width": 600,
+        "width": 576,
         "height": 768,
         "cfg_scale": 7,
         "sampler_name": "DPM++ 2M",
@@ -122,7 +122,7 @@ def generate_with_faceid(face_image_base64, seed, prompt, negative_prompt):
                         "threshold_b": 0.5,
                         "guidance_start": 0.0,
                         "guidance_end": 0.9,
-                        "advanced_weighting": [1.6] * 16,  # 16個相同的權重值
+                        "advanced_weighting": [1.5] * 16,  # 16個相同的權重值
                         "save_detected_map": True
                     },
                     {
@@ -186,11 +186,12 @@ def build_custom_prompt(outfit_style):
     <lora:IP Adapter FaceID Plus v2:0.8>, <lora:EyesGen:0.3>,
     masterpiece, best quality, 8k uhd, RAW photo,
     1girl, solo, young woman, canny face, delicate features, gentle smile,
-    (black eyes), (black long hair), (face ratio balance:1.2), (symmetrical face:1.2),
+    (black eyes), (black hair), (face ratio balance:1.2), (symmetrical face:1.2),
     {outfit_desc},
     pure white background
     
     """.strip()
+
 
     negative_prompt = f"""
     (worst quality, low quality),
@@ -208,7 +209,7 @@ def get_username(userId:int) -> Optional[str]:
         print(f"❌ 找不到使用者 ID {userId}")
         return None
 
-    username = result.get('username')
+    username = result["username"]  # 直接這樣取
     if not username:
         print(f"❌ 使用者 ID {userId} 沒有 username")
         return None

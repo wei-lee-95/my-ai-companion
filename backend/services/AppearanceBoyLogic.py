@@ -13,7 +13,7 @@ webui_server_url = "http://192.168.0.131:7860"  #通常是7860
 
 openpose_image_path = './assets/Appearance/openpose.png'
 
-BASE_DIR = os.path.dirname(__file__) 
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # 輸出的圖片存這裡
 out_dir = 'outputs'
@@ -52,7 +52,7 @@ def call_api(api_endpoint, **payload):
         )
         
         # 增加超時設置
-        response = urllib.request.urlopen(request, timeout=1000)  # 5分鐘超時
+        response = urllib.request.urlopen(request, timeout=10000)  # 5分鐘超時
         return json.loads(response.read().decode('utf-8'))
     except urllib.error.URLError as e:
         print(f"API 調用失敗: {str(e)}")
@@ -90,7 +90,7 @@ def generate_with_faceid_boy(face_image_base64, seed, prompt, negative_prompt):
         "negative_prompt": negative_prompt,
         "seed": seed,  # 隨機種子
         "steps":20,
-        "width": 600,
+        "width": 576,
         "height": 768,
         "cfg_scale": 7,
         "sampler_name": "DPM++ 2M",
@@ -202,7 +202,7 @@ def get_username_boy(userId:int) -> Optional[str]:
         print(f"❌ 找不到使用者 ID {userId}")
         return None
 
-    username = result.get('username')
+    username = result["username"]  # 直接這樣取
     if not username:
         print(f"❌ 使用者 ID {userId} 沒有 username")
         return None
