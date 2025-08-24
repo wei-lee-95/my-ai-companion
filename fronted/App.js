@@ -16,6 +16,7 @@ import MemoryList from './app/MemoryList';
 import MemoryDetail from './app/MemoryDetail';
 import { useEffect } from 'react';
 import PhotoUploadScreen from './app/PhotoUploadScreen';
+import SettingScreen from './app/SettingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,8 +24,8 @@ export default function App() {
   
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Auth">
-        <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>
+      <Stack.Navigator initialRouteName="AuthScreen">
+        <Stack.Screen name="AuthScreen" component={AuthScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="RoleList" component={RoleList} options={{ headerShown: false }}/>
         <Stack.Screen name="GenderRelationshipPicker" component={GenderRelationshipPicker} options={{ headerShown: false }}/>
@@ -35,9 +36,10 @@ export default function App() {
         <Stack.Screen name="MainScreen" component={MainScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="VideoScreen" component={VideoScreen} options={{ headerShown: false }}/>
-        <Stack.Screen name="PhotoUploadScreen" component={PhotoUploadScreen} options={{ headerShown: false }}/>        
+        <Stack.Screen name="PhotoUploadScreen" component={PhotoUploadScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="MemoryList" component={MemoryList} options={{ headerShown: false }}/>
         <Stack.Screen name="MemoryDetail" component={MemoryDetail} options={{ headerShown: false }}/>
+        <Stack.Screen name="SettingScreen" component={SettingScreen} options={{ headerShown: false }}/>
 
       </Stack.Navigator>
     </NavigationContainer>

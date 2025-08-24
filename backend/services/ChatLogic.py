@@ -1,7 +1,7 @@
 import openai
 import json
 import os
-from datetime import datetime
+from datetime import datetime, date
 import re
 import tempfile
 import subprocess
@@ -21,6 +21,7 @@ client = openai.OpenAI(api_key="sk-proj-MG2muN_vvbcYdrsz-zcQNq9xdBoTNZYi-iGUPNmu
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 os.makedirs(HISTORY_DIR, exist_ok=True)  # ✅ 確保資料夾存在
+
 
 # ================= character_personalities/characters ====================
 def get_character_info(character_id: int) -> Dict[str, Any]:
@@ -91,7 +92,7 @@ def get_chat_histories_by_sessions(character_id: int, user_id:int, limit: int = 
             new_session_id = chat_model.get_or_create_session(character_id, user_id)
             session_ids = [new_session_id]
             
-            return {"success": False, "data": [], "message": "⚠️ 該角色沒有任何聊天會話"}            
+            return {"success": True, "data": [], "message": "⚠️ 該角色沒有任何聊天會話"}           
 
         for sid in session_ids:
             remaining = limit - len(messages)
@@ -141,10 +142,10 @@ def save_chat_histories(character_id: int, user_id: int, messages: List[Dict[str
             "message": f"❌ 儲存聊天紀錄失敗: {str(e)}",
             "saved_messages": []
         }
-    
-# ===== Prompt 建立函式 =====
+
+
 # Prompt 建立函式 (第一次聊天)
-def generate_prompt(profile, stats):
+def generate_prompt(profile, stats): 
     base = f"""
 你的名字叫 {profile['name']}，{profile['age']} 歲，{profile['gender']}，是 {profile['occupation']}。
 你與使用者 {profile['user_name']} 的關係可能是 {profile['relationship']}，目前你們正處於 {profile['relationship_progress']} 階段。
@@ -177,22 +178,23 @@ def generate_prompt(profile, stats):
 風格要像真人，禁止自稱 AI／虛擬角色／語言模型。
 
 每次回覆不要超過四句話，字數精簡並且如果有問句不要超過一個，一個為限；每回合微調親密度（affection_change，-2～+2）。
-請在正文後附上：
+
+請你回覆正文後，附上 STATS 區塊如下：
 [STATS]
 {{
-  "mood": "情緒文字",
-  "affection_change": 數字
+  "mood": "在【傷心, 驚訝, 生氣, 開心, 中立】中選一個適合你現在情緒文字",
+  "affection_change": 數字（-3 到 +3）
 }}
 [/STATS]
 """
     return base
+
 
 # Prompt 建立函式 (並非 第一次聊天)
 def generate_prompt_old(profile, stats): 
     base = f"""
 你的名字叫 {profile['name']}，{profile['age']} 歲，{profile['gender']}，是 {profile['occupation']}。
 你與使用者 {profile['user_name']} 的關係可能是 {profile['relationship']}，目前你們正處於 {profile['relationship_progress']} 階段。
-你們開始對話的場景是「{profile['meeting_context']}」。
 
 你的個性：{profile['personality']}
 擅長／喜好：{profile['skills']}
@@ -221,20 +223,16 @@ def generate_prompt_old(profile, stats):
 風格要像真人，禁止自稱 AI／虛擬角色／語言模型。
 
 每次回覆不要超過四句話，字數精簡並且如果有問句不要超過一個，一個為限；每回合微調親密度（affection_change，-2～+2）。
-請在正文後附上：
+
+請你回覆正文後，附上 STATS 區塊如下：
 [STATS]
 {{
-  "mood": "情緒文字",
-  "affection_change": 數字
+  "mood": "在【傷心, 驚訝, 生氣, 開心, 中立】中選一個適合你現在情緒文字",
+  "affection_change": 數字（-3 到 +3）
 }}
 [/STATS]
 """
     return base
-
-# OOC替換新的message
-def replace_message(message_id, ooc_text):
-    updated_rows = chat_model.update_message(ooc_text, message_id)
-    return updated_rows
 
 def extract_reply_text(full_reply):
     if "[STATS]" in full_reply:
@@ -268,16 +266,17 @@ def parse_stats(reply, prev_stats):
             "affection": prev_stats.get("affection", "30"),
             "last_chat_time": datetime.now().isoformat()
         }
+    
 
 # 下載ffmpeg 如果有加到環境變數 應該就不用
 # ✅ 手動加入 ffmpeg 路徑（請改成你自己的路徑）
-# os.environ["PATH"] += os.pathsep + r"C:\ffmpeg-2025-08-07-git-fa458c7243-full_build\bin"
-# try:
-#     result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True)
-#     print("✅ FFmpeg 找到了：")
-#     print(result.stdout.splitlines()[0])
-# except FileNotFoundError:
-#     print("❌ Python 找不到 ffmpeg！")
+os.environ["PATH"] += os.pathsep + r"D:\ffmpeg-2025-07-01-git-11d1b71c31-full_build\bin"
+try:
+    result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True)
+    print("✅ FFmpeg 找到了：")
+    print(result.stdout.splitlines()[0])
+except FileNotFoundError:
+    print("❌ Python 找不到 ffmpeg！")
 
 
 # ===== GPT 4o 處裡圖片 =====
@@ -288,10 +287,18 @@ def gpt4o_image_caption(image_base64):
     ]
     # GPT-4o 圖片格式輸入，目前官方主要用 url 或 multipart upload，這裡先示意放 base64
     response = client.chat.completions.create(
-        model="gpt-4.1",
+        model="gpt-4o",
         messages=messages,
         # 假設 OpenAI SDK 支援 image_url 或 image_base64 格式，依官方文件調整
         inputs=[{"type": "image_url", "image_url": {"url": image_base64}}],
         temperature=0
     )
     return response.choices[0].message.content
+
+
+# OOC替換新的message
+def replace_message(message_id, ooc_text):
+    updated_rows = chat_model.update_message(ooc_text, message_id)
+    return updated_rows
+
+

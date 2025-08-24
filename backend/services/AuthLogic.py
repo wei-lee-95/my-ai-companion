@@ -43,3 +43,29 @@ def login_user(email: str, password: str):
     print("[DEBUG] 密碼匹配，登入成功")
     user_model.update_last_login(user['id'])
     return user, None
+
+def change_profile(user_id: int, email: str, password: str,age: int):
+    print(f"這是AuthLogic中的email={email}, password={password}, user_id={user_id}")
+    existing_user = user_model.get_user_by_email(email)
+    if existing_user and existing_user["id"] != user_id:
+        return None, "Email 已被註冊"
+
+    password_hash = hash_password(password)
+    # 如果 username 沒有給，可以用 email 或空字串
+    user_id = user_model.update_user_profile(user_id, email, password_hash, age)
+    return user_id, None
+
+def get_info(user_id:int):
+    rows = user_model.get_user_by_id(user_id)
+    if not rows:
+        return None
+    print({rows})
+
+    old_profile = {
+        'username': rows['username'],
+        'email': rows['email'],
+        'age': rows['age'],
+    }
+
+    return old_profile
+        

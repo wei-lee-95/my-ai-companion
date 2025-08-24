@@ -9,6 +9,7 @@ from routes.VideoApi import video_bp
 from routes.AuthApi import auth_bp
 from routes.CreateCharacterApi import createcharacter_bp
 from routes.RouteInfoApi import routeinfo_bp
+from routes.SettingApi import setting_bp
 
 app = Flask(__name__, static_url_path='/outputs', static_folder='outputs')
 CORS(app)
@@ -22,6 +23,7 @@ app.register_blueprint(video_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(createcharacter_bp)
 app.register_blueprint(routeinfo_bp)
+app.register_blueprint(setting_bp)
 
 @app.route('/')
 def index():

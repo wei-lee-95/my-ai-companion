@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } fr
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute} from '@react-navigation/native';
 import { useState, useEffect } from 'react';
-import characterImage from '../assets/character.png';
+import characterImage from '../assets/character.png'; //這邊改成提取資料庫的路徑找圖片
 import Fontisto from '@expo/vector-icons/Fontisto';
 import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
@@ -35,10 +35,9 @@ export default function MainScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 頂部積分與設定 */}
+      {/* 頂部設定 */}
       <View style={styles.topBar}>
-        {/* <Text style={styles.points}>積分：35</Text> */}
-        <TouchableOpacity onPress={() => navigation.navigate('SettingScreen')} >
+        <TouchableOpacity onPress={() => navigation.navigate('SettingScreen',{userId})} >
           <Ionicons name="settings-outline" size={30} color="#555" />
         </TouchableOpacity>
       </View>
@@ -50,37 +49,39 @@ export default function MainScreen() {
         imageUri && <Image source={{ uri: `${BASE_URL}/${imageUri}` }} style={styles.character} />
       )}
 
-      {/* 左側功能按鈕：任務 */}
-
       {/* 右側功能按鈕 */}
       <View style={styles.sideButtons}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={() => navigation.navigate('PhotoUploadScreen',{characterId, name} )}>          
+          onPress={() => navigation.navigate('PhotoUploadScreen',{characterId, name} )}>
           <Fontisto name="photograph" size={30} color="#555" />
         </TouchableOpacity>
       </View>
 
       {/* 底部功能列 */}
       <View style={styles.bottomBar}>
+
         <TouchableOpacity onPress={() => navigation.navigate('RoleList', { userId })}>
           <View style={styles.circleButton}>
             <Ionicons name="person-circle-outline" size={35} color="#333" />
           </View>
           <Text style={styles.label}>角色</Text>
         </TouchableOpacity>
+
         <TouchableOpacity onPress={() => navigation.navigate('MemoryStoreScreen',{ characterId, userId, name })}>
           <View style={styles.circleButton}>
             <Ionicons name="calendar-outline" size={35} color="#333" />
           </View>
           <Text style={styles.label}>回憶小舖</Text>
         </TouchableOpacity>
+
         <TouchableOpacity onPress={() => navigation.navigate('ChatScreen', { characterId, userId, name })}>
           <View style={styles.circleButton}>
             <MaterialIcons name="chat-bubble-outline" size={35} color="#333" />
           </View>
           <Text style={styles.label}>聊天</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity onPress={() => navigation.navigate('VideoScreen',{ characterId, userId, name })}>
           <View style={styles.circleButton}>
             <Ionicons name="videocam-outline" size={35} color="#333" />
@@ -107,10 +108,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   character: {
-    width: 375,
+    width: 300,
     height: 500,
     resizeMode: 'contain',
-    marginTop: 70,
+    marginTop: 40,
   },
   leftButtons: {
     position: 'absolute',
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   sideButtons: {
     position: 'absolute',
     right: 20,
-    top: 100,
+    top: 150,
   },
   iconButton: {
     marginVertical: 10,

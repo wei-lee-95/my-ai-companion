@@ -123,6 +123,15 @@ class UserModel:
         sql = "UPDATE users SET last_login = ? WHERE id = ?"
         self.db.execute_update(sql, (now_str, user_id,))
 
+    def update_user_profile(self, user_id: int, email:str, password:str, age:int ) -> int:
+        """更新使用者的資料"""
+        sql="""
+        UPDATE users
+        SET email = ?, password_hash = ?, age = ?
+        WHERE id = ?
+        """
+        self.db.execute_update(sql, (email, password, age, user_id,))
+
 class CharacterModel:
     """角色資料模型"""
     

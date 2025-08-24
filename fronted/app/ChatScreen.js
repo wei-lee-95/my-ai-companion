@@ -1,4 +1,4 @@
-//聊天頁面的UI //鍵盤輸入、回覆好像有個text沒有包到<text>
+//聊天頁面的UI //鍵盤輸入、回覆好像有個text沒有包到<text> //created_at的時間很怪
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -6,8 +6,8 @@ import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
-import { useNavigation, useRoute} from '@react-navigation/native';
 import { useRef, useState, useEffect } from 'react';
+import { useNavigation, useRoute} from '@react-navigation/native';
 import {
   FlatList,
   Image,
@@ -28,7 +28,7 @@ import characterImage from '../assets/full_body.png';
 import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function ChatScreen() {
-    const route = useRoute();
+  const route = useRoute();
   const { characterId, userId, name } = route.params; //從mainscreen來的
 
   const [messages, setMessages] = useState([]);
@@ -254,9 +254,9 @@ export default function ChatScreen() {
 
     try {
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-        await recording.startAsync();
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
 
       setRecordingInstance(recording);
       setIsRecording(true);
@@ -435,7 +435,6 @@ export default function ChatScreen() {
       console.error('播放失敗', error);
     }
   };
-
 
   const handleSelectMemoryCategory = (cat) => {
     setSelectedCategory(cat.key);
@@ -675,12 +674,12 @@ export default function ChatScreen() {
         <View style={styles.inner}>
           {/* 區塊 1：上方標題區 */}
           <View style={styles.header}>
-            <Text style={{ fontSize: 20, fontWeight: '600' }}>{name}</Text> {/*要改成從資料庫拿*/}
+            <Text style={{ fontSize: 20, fontWeight: '600' }}>{name}</Text>
           </View>
 
           <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
             <Text style={styles.backButtonText}>≪</Text>
           </TouchableOpacity>
@@ -778,9 +777,9 @@ export default function ChatScreen() {
       </TouchableWithoutFeedback>
 
       <Modal visible={saveModalVisible} transparent animationType="fade">
-        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#00000099' }}>
-          <View style={{ margin: 20, backgroundColor: '#fff', padding: 20, borderRadius: 10 }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>選擇記憶類別</Text>
+        <View style={styles.modalbackground}>
+          <View style={styles.modalinfo}>
+            <Text style={styles.modaltitle}>選擇記憶類別</Text>
 
       {memoryCategories.map((cat) => (
         <TouchableOpacity
@@ -792,7 +791,10 @@ export default function ChatScreen() {
           }}
           onPress={() => handleSelectMemoryCategory(cat)}
         >
-            <Text style={{ fontSize: 16 }}>{cat.icon} {cat.title}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {cat.iconComponent && <cat.iconComponent />}
+              <Text style={{ fontSize: 16, marginLeft: 4 }}>{cat.title}</Text>
+            </View>
           </TouchableOpacity>
         ))}
 
@@ -805,7 +807,7 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
-      
+
       <Modal visible={oocModalVisible} transparent animationType="fade">
         <View style={styles.modalbackground}>
           <View style={styles.modalinfo}>

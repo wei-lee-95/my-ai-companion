@@ -127,10 +127,12 @@ export default function MemoryStoreScreen() {
     }
   };
 
-  const renderItem = ({ item }) => {
-  const latestItem = latestMemoriesByCategory[item.id];
 
-    return (
+
+  const renderItem = ({ item }) => {
+    const latestItem = latestMemoriesByCategory[item.id];
+
+    return ( 
       <TouchableOpacity
         style={styles.card}
         onPress={() =>

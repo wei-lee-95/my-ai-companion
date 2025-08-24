@@ -3,7 +3,6 @@ export const VIDEO_API_URL = 'https://7aa8d2c2a045.ngrok-free.app';
 export const VOICE_API_URL = 'https://ef802895c880.ngrok-free.app';
 
 export const API_ENDPOINTS = {
-
     //LoginRegisterScreen
     REGISTER: `${BASE_URL}/register`,
     LOGIN: `${BASE_URL}/login`,
@@ -16,6 +15,7 @@ export const API_ENDPOINTS = {
     UPDATE_VOICE_PATH: `${BASE_URL}/update_voice_path`,
     UPDATE_ANIMATION_PATH: `${BASE_URL}/update_animation_path`,
 
+
     // RouteInfo //用於get
     ROLELIST: `${BASE_URL}/rolelist`,
     GET_IMAGE: `${BASE_URL}/get-image`,
@@ -23,13 +23,12 @@ export const API_ENDPOINTS = {
     // AppearanceScreen
     GENERATE_APPEARANCE_BOY: `${BASE_URL}/generate-appearance-boy`,
     GENERATE_APPEARANCE_GIRL: `${BASE_URL}/generate-appearance-girl`,
+    GET_IMAGE_BASE64: `${BASE_URL}/get-image-base64`,
     GENERATE_EMOTION: `${BASE_URL}/generate-emotion`,
     GENERATE_VIDEO: `${BASE_URL}/generate-video`,
-    GET_IMAGE_BASE64: `${BASE_URL}/get-image-base64`,
-
 
     // VoiceSettingScreen
-    TRAIN_VOICE: `${BASE_URL}/train-voice-model`,
+    TRAIN_VOICE: `${BASE_URL}/train-voice`,
     GENERATE_VOICE: `${BASE_URL}/generate-voice`,
     GET_AUDIO_BASE64: `${BASE_URL}/get-audio-base64`,
 
@@ -38,6 +37,7 @@ export const API_ENDPOINTS = {
     CHAT_IMAGE: `${BASE_URL}/chat-image`,
     CHAT_VOCAL: `${BASE_URL}/chat-vocal`,
     GENERATE_MEMORY: `${BASE_URL}/generate-memory`,
+    OOC: `${BASE_URL}/ooc`,
 
     // PhotoUploadScreen
     GENERATE: `${BASE_URL}/generate`,
@@ -46,8 +46,6 @@ export const API_ENDPOINTS = {
     VIDEO_VOICE: `${BASE_URL}/video-voice`,
     VIDEO_RESPONSE: `${BASE_URL}/video-response`,
     VIDEO_PHOTO: `${BASE_URL}/video-photo`,
-    VIDEO_LIP_SYNC: `${VIDEO_API_URL}/generate-lip-sync`,
-    VIDEO_NO_LIP_SYNC: `${BASE_URL}/get-no-lip-sync-video`,
 
     //Memory
     GET_MEMORY_CATEGORIES: `${BASE_URL}/get-memory-categories`,
@@ -57,4 +55,8 @@ export const API_ENDPOINTS = {
     DELETE_MEMORY: `${BASE_URL}/delete-memory`,
     ADD_MEMORY_CATEGORY: `${BASE_URL}/add-memory-category`,
     GET_SINGLE_MEMORY: `${BASE_URL}/get-single-memory`,
+
+    //Setting
+    SETTING_PROFILE: `${BASE_URL}/setting-profile`,
+    GET_PROFILE: `${BASE_URL}/get-profile`,
 };

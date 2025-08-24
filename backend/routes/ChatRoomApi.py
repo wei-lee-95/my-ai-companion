@@ -1,17 +1,21 @@
 from services.ChatLogic import get_character_info, get_character_personalities_info, get_db_stats, get_chat_histories_by_sessions, save_chat_histories, generate_prompt, extract_reply_text, parse_stats, save_db_stats, replace_message, generate_prompt_old
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, Flask, Response, request, jsonify # 用flask來做前後端串聯
 import openai
+import json
 import os
 from datetime import datetime
+import re
 import whisper
 import tempfile
+import subprocess
+import base64
 from database.database import character_model
-
-# ===== OpenAI / Whisper =====
+    
+# 初始化 OpenAI client（填入你的 API 金鑰）
 client = openai.OpenAI(api_key="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")  # ✅ 替換為你的金鑰
 model = whisper.load_model("small") 
 
-chatRoom_bp = Blueprint("chatRoom", __name__)
+chatRoom_bp = Blueprint('chatRoom', __name__)
 
 # ===== 單一角色的聊天 API（前端只看到對話） =====
 @chatRoom_bp.route("/chat", methods=["POST"])
@@ -47,17 +51,17 @@ def chat():
         return jsonify({"error": stats_res["message"]}), 404
     stats = stats_res["data"]
 
-    # 取得聊天歷史 (限制最新 50 條)
-    chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
-    if not chat_histories_res["success"]:
-        return jsonify({"error": chat_histories_res["message"]}), 404
-    messages = chat_histories_res["data"]
-
     # 親密度下降邏輯
     last_time = datetime.fromisoformat(stats.get("last_chat_time"))
     days_gap = (datetime.now() - last_time).days
     if days_gap >= 2:
         stats["affection"] = str(max(0, int(stats["affection"]) - days_gap * 2))
+
+    # 取得聊天歷史 (限制最新 50 條)
+    chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
+    if not chat_histories_res["success"]:
+        return jsonify({"error": chat_histories_res["message"]}), 404
+    messages = chat_histories_res["data"]
 
     # 組裝提示詞 + 對話內容
     if not messages:
@@ -147,17 +151,22 @@ def chat_image():
         return jsonify({"error": stats_res["message"]}), 404
     stats = stats_res["data"]
 
+    if not profile or not stats:
+        return jsonify({"error": "角色資料不完整"}), 500
+
     # 取得聊天歷史 (限制最新 50 條)
     chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
     if not chat_histories_res["success"]:
         return jsonify({"error": chat_histories_res["message"]}), 404
     messages = chat_histories_res["data"]
-
-    if not profile or not stats or not messages:
-        return jsonify({"error": "角色資料不完整"}), 500
-
-    # 準備背景設定
-    system_prompt = generate_prompt(profile, stats)
+     
+    # 判斷新/舊角色
+    if not messages:
+        # 新角色：完整設定
+        system_prompt = generate_prompt(profile, stats)
+    else:
+        # 舊角色：簡化版設定
+        system_prompt = generate_prompt_old(profile, stats)
 
     # 抽取最近對話文字內容（只抽 user/assistant 的純文字）
     recent = []
@@ -282,14 +291,8 @@ def chat_vocal():
             return jsonify({"error": stats_res["message"]}), 404
         stats = stats_res["data"]
 
-        # 取得聊天歷史 (限制最新 50 條)
-        chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
-        if not chat_histories_res["success"]:
-            return jsonify({"error": chat_histories_res["message"]}), 404
-        messages = chat_histories_res["data"]
-
-        if not profile or not stats or not messages:
-            return jsonify({"error": "角色資料不完整"}), 500  
+        if not profile or not stats:
+            return jsonify({"error": "角色資料不完整"}), 500 
 
         # 親密度下降邏輯
         last_time = datetime.fromisoformat(stats.get("last_chat_time"))
@@ -297,10 +300,22 @@ def chat_vocal():
         if days_gap >= 2:
             stats["affection"] = str(max(0, int(stats["affection"]) - days_gap * 2))
 
-        # 加入提示詞與使用者訊息
-        system_prompt = {"role": "system", "content": generate_prompt(profile, stats)}
-        messages.append(system_prompt)
-        messages.append({"role": "user", "content": corrected_text})
+        # 取得聊天歷史 (限制最新 50 條)
+        chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
+        if not chat_histories_res["success"]:
+            return jsonify({"error": chat_histories_res["message"]}), 404
+        messages = chat_histories_res["data"]
+
+        # 組裝提示詞 + 對話內容
+        if not messages:
+            # 新角色
+            system_prompt = {"role": "system", "content": generate_prompt(profile, stats)}
+            messages = [system_prompt, {"role": "user", "content": corrected_text}]
+        else:
+            # 舊角色
+            system_prompt = {"role": "system", "content": generate_prompt_old(profile, stats)}
+            messages.append(system_prompt)
+            messages.append({"role": "user", "content": corrected_text}) 
 
         # GPT 回覆角色內容
         role_response = client.chat.completions.create(
@@ -343,6 +358,7 @@ def chat_vocal():
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
+
 # ===================OOC=====================
 @chatRoom_bp.route("/ooc", methods=["POST"])
 def ooc_situation():
@@ -371,3 +387,6 @@ def ooc_situation():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+

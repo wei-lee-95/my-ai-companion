@@ -7,6 +7,8 @@ import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Video } from 'expo-av';
+import { useRoute} from '@react-navigation/native';
+
 
 import useMicAutoRecorder from '../hook/useMicAutoRecorder';
 import { API_ENDPOINTS, BASE_URL } from '../../fronted/apiConfig';

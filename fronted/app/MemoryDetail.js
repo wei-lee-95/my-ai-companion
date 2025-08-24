@@ -19,7 +19,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
-
 export default function MemoryDetail() {
   
   const navigation = useNavigation();
@@ -268,23 +267,22 @@ export default function MemoryDetail() {
           <Text style={styles.backButtonText}>≪</Text>
         </TouchableOpacity>
 
-        <Text style={styles.absoluteTitle}>{memoryTitle}</Text>
-
         <View style={styles.backButtonPlaceholder} />
       </View>
-
+      
+      <Text style={styles.date}>{category_title}</Text>
       <Text style={styles.icon}>{icon}</Text>
       <Text style={styles.date}>{date}</Text>
       <Text style={styles.event}>{memoryTitle}</Text>
 
 
     <View style={styles.chatContainer}>
-      {content?.chatContent?.imageUri ? (
-        <Image source={{ uri: content?.chatContent.imageUri }} style={{ width: 200, height: 200, borderRadius: 10 }} />
-      ) : content?.chatContent?.audioUri ? (
+      {content?.imageUri ? (
+        <Image source={{ uri: content.imageUri }} style={{ width: 200, height: 200, borderRadius: 10 }} />
+      ) : content?.audioUri ? (
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center' }}
-          onPress={() => playAudio(content?.chatContent.audioUri)}
+          onPress={() => playAudio(chatContent.audioUri)}
         >
           <Ionicons
             name={playing ? 'pause-circle' : 'play-circle'}
@@ -443,16 +441,15 @@ export default function MemoryDetail() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: '#efe2d8' },
-  absoluteTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 18,
-  },
   icon: { fontSize: 40, textAlign: 'center', marginTop: 5 },
   date: { fontSize: 16, textAlign: 'center', marginTop: 5 },
-  event: { fontSize: 20, textAlign: 'center', marginTop: 5, marginBottom: 20 },
+  event: { 
+    fontSize: 20, 
+    textAlign: 'center', 
+    marginTop: 10, 
+    marginBottom: 20,
+    fontWeight: 'bold',
+  },
   chatContainer: {
     backgroundColor: '#eee',
     borderRadius: 8,
@@ -579,6 +576,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 6,
     elevation: 3,
+    zIndex: 10,
   },
   backButtonText: {
     fontSize: 18,
