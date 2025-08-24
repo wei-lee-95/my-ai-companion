@@ -1,5 +1,5 @@
 export const BASE_URL = 'http://192.168.0.131:5000';
-export const VIDEO_API_URL = 'https://0828e917876f.ngrok-free.app';
+export const VIDEO_API_URL = 'https://4cc3b2238c94.ngrok-free.app';
 export const VOICE_API_URL = 'https://933ac1807001.ngrok-free.app';
 
 export const API_ENDPOINTS = {

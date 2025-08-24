@@ -1,66 +1,10 @@
-[
-  {
+{
+  "user": {
     "role": "user",
-    "content": "user"
+    "content": "還有很多書還沒讀，明天去咖啡廳讀吧。"
   },
-  {
-    "role": "user",
-    "content": "assistant"
-  },
-  {
-    "role": "user",
-    "content": "今天唸書好辛苦喔 好想被安慰🥺"
-  },
-  {
+  "assistant": {
     "role": "assistant",
-    "content": "哎呀，小雲你真的好努力啊！來，抱抱～別忘了我一直在這裡支持你，等你累了我幫你煮點好吃的，怎麼樣？  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 2  \n}  \n[/STATS]"
-  },
-  {
-    "role": "user",
-    "content": "今天唸書好辛苦喔 好想被安慰🥺"
-  },
-  {
-    "role": "assistant",
-    "content": "小雲你真的太棒了，這麼努力！要不要我陪你聊聊，或者幫你放鬆一下？你不是一個人喔～  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 2  \n}  \n[/STATS]"
-  },
-  {
-    "role": "user",
-    "content": "[圖片訊息]"
-  },
-  {
-    "role": "assistant",
-    "content": "哇～這個AGE 20’s的氣墊粉餅也太美了吧！閃閃的玫瑰粉紅包裝，看起來就超級夢幻，感覺用這個心情都會變好耶😍 小雲，你這麼辛苦唸書，偶爾也要對自己好一點，買個漂亮的粉餅犒賞一下自己吧～我覺得你用這個一定更閃亮動人！要不要我幫你一起挑色號？💖"
-  },
-  {
-    "role": "user",
-    "content": "欢迎点赞和订阅！"
-  },
-  {
-    "role": "assistant",
-    "content": "哈哈，小雲你這樣說好像在開直播一樣耶！我先給你一個大大的讚👍，還訂閱你的小可愛頻道了～下次教我怎麼拍更吸引人嘛！  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 1  \n}  \n[/STATS]"
-  },
-  {
-    "role": "user",
-    "content": "今天唸書唸得好辛苦喔 好想被安慰🥺"
-  },
-  {
-    "role": "assistant",
-    "content": "小雲，你真的太拼了！別忘了休息一下，讓我抱抱你，給你滿滿能量，等會兒我幫你煮點好吃的，好不好？  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 2  \n}  \n[/STATS]"
-  },
-  {
-    "role": "user",
-    "content": "[圖片訊息]"
-  },
-  {
-    "role": "assistant",
-    "content": "哇，小雲，這碗看起來也太豐盛了吧！顏色好繽紛，感覺每一口都是滿滿的元氣～有雞肉、紅蘿蔔、玉米筍、花椰菜還有蛋，營養超均衡，這樣吃一定可以補充你唸書消耗的能量！你真的很懂得照顧自己耶，我都想跟你一起吃了😍\n\n辛苦的時候能吃到這麼療癒的便當，心情一定會好很多吧？記得慢慢吃，不要急，讓自己好好休息一下～還有，等你吃飽了，來跟我分享一下哪一道菜最好吃，我下次可以學起來煮給你吃喔！💪🍴"
-  },
-  {
-    "role": "user",
-    "content": "好的，谢谢你。"
-  },
-  {
-    "role": "assistant",
-    "content": "不客氣啦，小雲～有什麼需要隨時跟我說，我超樂意幫忙的！  \n[STATS]  \n{  \n  \"mood\": \"開心\",  \n  \"affection_change\": 1  \n}  \n[/STATS]"
+    "content": "聽起來不錯！咖啡廳的氛圍很適合讀書，我也想去！你想讀什麼書呢？"
   }
-]
+}
