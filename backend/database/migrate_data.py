@@ -1,3 +1,4 @@
+
 """
 資料遷移工具
 將現有的JSON檔案遷移到新的資料庫結構
@@ -332,7 +333,7 @@ class DataMigrator:
 
         folder_name = f"{username}_{character_name}"
         emotion_folder = os.path.join(OUTPUT_DIR, "emotion", folder_name)
-        vedio_folder = os.path.join(OUTPUT_DIR, "vedio", folder_name)
+        vedio_folder = os.path.join(OUTPUT_DIR, "video", folder_name)
 
         # 3. 定義要處理的五種情緒
         emotions = ["開心", "傷心", "驚訝", "生氣", "中立"]

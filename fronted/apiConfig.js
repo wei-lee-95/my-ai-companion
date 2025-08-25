@@ -1,6 +1,6 @@
 export const BASE_URL = 'http://192.168.0.131:5000';
 export const VIDEO_API_URL = 'https://7aa8d2c2a045.ngrok-free.app';
-export const VOICE_API_URL = 'https://ef802895c880.ngrok-free.app';
+export const VOICE_API_URL = 'https://de466bccebe4.ngrok-free.app';
 
 export const API_ENDPOINTS = {
     //LoginRegisterScreen
@@ -28,9 +28,10 @@ export const API_ENDPOINTS = {
     GENERATE_VIDEO: `${BASE_URL}/generate-video`,
 
     // VoiceSettingScreen
-    TRAIN_VOICE: `${BASE_URL}/train-voice`,
-    GENERATE_VOICE: `${BASE_URL}/generate-voice`,
+    TRAIN_VOICE: `${VOICE_API_URL}/train-voice-model`,
+    GENERATE_VOICE: `${VOICE_API_URL}/generate-voice`,
     GET_AUDIO_BASE64: `${BASE_URL}/get-audio-base64`,
+    UPLOAD_MODEL: `${VOICE_API_URL}/upload-model`,
 
     // ChatScreen
     CHAT: `${BASE_URL}/chat`,

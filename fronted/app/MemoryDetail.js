@@ -145,7 +145,7 @@ export default function MemoryDetail() {
     setConfirmDeleteVisible(false);
 
     try {
-      const res = await fetch(`${API_ENDPOINTS.UPDATE_MEMORY}`, {
+      const res = await fetch(`${API_ENDPOINTS.DELETE_MEMORY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memory_id: memory_id }), // 你有帶 memory_id

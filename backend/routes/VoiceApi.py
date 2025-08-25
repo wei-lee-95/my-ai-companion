@@ -4,6 +4,24 @@ from services.VoiceLogic import get_username, run_tts_script, run_prerequisites_
 
 voice_bp = Blueprint('voice', __name__)
 
+@voice_bp.route("/upload-model", methods=["POST"])
+def upload_model():
+
+    file = request.file
+    name = file.get("name")
+
+    SAVE_DIR = os.path.join(BASE_DIR, "assets", "Voice", "Models", f"{name}")
+    os.makedirs(SAVE_DIR, exist_ok=True)
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files["file"]
+    save_path = os.path.join(SAVE_DIR, file.filename)
+    file.save(save_path)
+    
+    return jsonify({"status": "ok", "path": save_path})
+
 @voice_bp.route('/train-voice-model', methods=['POST'])
 def auto_create_rvc_model():
     
