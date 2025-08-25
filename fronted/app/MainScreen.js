@@ -108,10 +108,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   character: {
-    width: 300,
+    width: 375,
     height: 500,
     resizeMode: 'contain',
-    marginTop: 40,
+    marginTop: 70,
   },
   leftButtons: {
     position: 'absolute',
