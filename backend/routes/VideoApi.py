@@ -6,7 +6,12 @@ import openai
 import uuid
 import random
 import json
-from services.VideoLogic import process_chat_response, initialize_resources, process_environment
+import traceback
+from services.VideoLogic import process_chat_response, initialize_resources, process_environment, get_username, get_gender, get_pitch_and_rate
+from database.database import character_model, chat_model
+from services.VoiceLogic import get_username, run_tts_script
+from services.ChatLogic import  get_db_stats
+
 
 # 初始化 OpenAI client（填入你的 API 金鑰）
 client = openai.OpenAI(api_key="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")  # ✅ 替換為你的金鑰
@@ -16,6 +21,40 @@ video_bp = Blueprint('video', __name__)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 STATS_DIR = os.path.join(BASE_DIR, "assets/Chat/chat_histories")
 VIDEO_DIR = os.path.join(BASE_DIR, "outputs/video")
+
+@video_bp.route("/get-default-video", methods=["POST"])
+def get_default_video():
+
+    data = request.get_json()
+    user_id = data.get("userId")
+    character_name = data.get("name")
+
+    username = get_username(user_id)
+
+    try:
+
+        video_folder = os.path.join(VIDEO_DIR, f"{username}_{character_name}", "中立")
+
+        candidates = [f for f in os.listdir(video_folder)
+                    if f.lower().startswith("no") and f.endswith(".mp4")]
+
+        if not os.path.exists(video_folder):
+            return jsonify({"error": f"找不到影片資料夾: {video_folder}"}), 404
+
+        selected_video = random.choice(candidates)
+        video_path_fs = os.path.join(video_folder, selected_video)  # 真實檔案路徑
+
+        if os.path.exists(video_path_fs):
+            with open(video_path_fs, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode()
+
+        return jsonify({"video_base64": encoded})
+
+    except Exception as e:
+        print(f"⚠️ video-response 發生錯誤: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 @video_bp.route('/video-voice', methods=['POST'])
 def save_voice_file():
@@ -106,14 +145,94 @@ def process_video_response():
         if not voice_text:
             return jsonify({"success": False, "error": "缺少 voice"}), 400
 
-        user_text = data['text']
-        response = process_chat_response(user_id, character_id, name, voice_text, image_info)
+        #user_text = data['text']
+        try:
+            response = process_chat_response(user_id, character_id, name, voice_text, image_info)
+
+        except Exception as e:
+            print("❌ process_chat_response 出錯:", str(e))
+            traceback.print_exc()
+            return jsonify({"success": False, "error": "process_chat_response 執行失敗"}), 500
 
         return response  # 這裡 response 已經是 jsonify 格式（從 service 傳回的）
     
     except Exception as e:
         print("⚠️ 回覆產生失敗:", str(e))
         return {"error": "產生回覆失敗"}, 500
+    
+@video_bp.route('/video-generate-voice', methods=['POST'])
+def generate_voice():
+    data = request.json
+    text = data.get('text')
+    model_name = data.get('model_name')
+    userId = data.get('userId')
+    character_id = data.get('character_id')
+    gender = get_gender(character_id, userId)
+
+    setting = get_pitch_and_rate(character_id)
+    pitch = setting.get('pitch', 0)
+    rate = setting.get('rate', 0)
+
+    if gender == 'female':
+        tts_voice="zh-TW-HsiaoYuNeural"
+    else:
+        tts_voice="zh-TW-YunJheNeural"
+
+    user_name = get_username(userId)
+
+    model_folder = os.path.join(BASE_DIR, "assets", "Voice", "Models", f"{user_name}_{model_name}")
+
+    output_dir = os.path.join(BASE_DIR, "outputs", "Voice")
+    os.makedirs(output_dir, exist_ok=True)
+
+    tts_path = os.path.join(output_dir, 'tts_output.wav')
+    final_output_path = os.path.join(output_dir, 'final_output.wav')
+
+    try:
+        pth_file = next((os.path.join(model_folder, f)
+                         for f in os.listdir(model_folder) if f.endswith('.pth')), None)
+        if not pth_file:
+            return jsonify({"error": "找不到模型檔案"}), 500
+        
+        # "zh-TW-YunJheNeural"
+        # "zh-TW-HsiaoYuNeural"
+        
+        run_tts_script(
+            tts_text=text,
+            #tts_language_code="cmn-TW",
+            tts_voice=tts_voice,
+            tts_rate=rate,
+            pitch=pitch,
+            output_tts_path=tts_path,
+            clean_audio=True,
+            clean_strength=0.5,
+            export_format="WAV",
+            tts_file="",
+            index_rate=0.75,
+            volume_envelope=1,
+            protect=0.33,
+            hop_length=128,
+            f0_method="rmvpe",
+            output_rvc_path=final_output_path,
+            pth_path=pth_file,
+            index_path="",
+            split_audio=False,
+            f0_autotune=False,
+            f0_autotune_strength=0,
+            f0_file=None,
+            embedder_model="contentvec"
+        )
+
+        if os.path.exists(final_output_path):
+            with open(final_output_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+                return jsonify({"message": "生成成功", "audio_base64": encoded})
+        else:
+            return jsonify({"error": "生成失敗"}), 500
+
+    except Exception as e:
+        logging.exception("TTS 生成錯誤：")
+        return jsonify({"error": str(e)}), 500
     
 @video_bp.route('/get-no-lip-sync-video', methods=['POST'])
 def video_response():
@@ -122,19 +241,17 @@ def video_response():
         if not data:
             return jsonify({"error": "缺少資料"}), 400
 
-        username = "test1"
-        character_name = "金珉奎"
+        user_id = data.get("userId")
+        character_id = data.get("character_id")
+        character_name = data.get("name")
         reply_text = data.get("reply")
 
-        # 讀取角色 stats（取得 mood）
-        stats_path = os.path.join(STATS_DIR, f"{character_name}_stats.json")
-        if not os.path.exists(stats_path):
-            print(f"[DEBUG] 找不到角色 stats: {stats_path}")
-            return jsonify({"error": "找不到角色 stats"}), 404
+        username = get_username(user_id)
 
-        with open(stats_path, "r", encoding="utf-8") as f:
-            stats = json.load(f)
-
+        stats_res = get_db_stats(character_id)
+        if not stats_res["success"]:
+            return jsonify({"error": stats_res["message"]}), 404
+        stats = stats_res["data"]
         mood = stats.get("mood", "中立")
 
         # 選影片

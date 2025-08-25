@@ -134,7 +134,7 @@ def generate_voice():
     pitch = data.get('pitch', 0)
     model_name = data.get('model_name', 'Mingyu')
     userId = data.get('userId')
-    gender = data.get('gender')
+    gender = data.get('gender') 
 
     if gender == '女性':
         tts_voice="zh-TW-HsiaoYuNeural"

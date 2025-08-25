@@ -34,6 +34,35 @@ export default function VideoScreen() {
   const cameraRef = useRef(null);
   const [camPermission, requestCamPermission] = useCameraPermissions();
 
+useEffect(() => {
+  const fetchDefaultVideo = async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.VIDEO_DEFAULT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, name }),
+      });
+
+      if (!res.ok) {
+        console.error("取得預設影片失敗", await res.text());
+        return;
+      }
+
+      const json = await res.json();
+      const videoBase64 = json.video_base64;
+      if (!videoBase64) return;
+
+      const videoFileUri = await saveVideoBase64ToFile(videoBase64);
+      setVideoKey(Date.now()); 
+      setVideoUri(videoFileUri);  // 一進來就先播這個
+    } catch (err) {
+      console.error("fetchDefaultVideo 錯誤:", err);
+    }
+  };
+
+  fetchDefaultVideo();
+}, [userId, name]);
+
   const takeSnapshot = async () => {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync({
@@ -127,10 +156,10 @@ export default function VideoScreen() {
       console.log('回覆內容：', replyData.reply);
 
       // 產生語音
-      const generateRes = await fetch(API_ENDPOINTS.GENERATE_VOICE, {
+      const generateRes = await fetch(API_ENDPOINTS.VIDEO_GENERATE_VOICE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: replyData.reply, rate: 0, pitch: 0, model_name: "金珉奎" }),
+        body: JSON.stringify({ text: replyData.reply, model_name: name, userId: userId, character_id: characterId}),
       });
 
       const voiceResult = await generateRes.json();
@@ -200,7 +229,7 @@ export default function VideoScreen() {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ reply: replyText }),
+            body: JSON.stringify({ reply: replyText, userId: userId, character_id: characterId, name: name, }),
           });
 
           if (!res.ok) {
@@ -315,7 +344,7 @@ export default function VideoScreen() {
     setIsCameraOn(false);
     setPipPrimary('image');
     Vibration.vibrate(200);
-    navigation.navigate('MainScreen');
+    navigation.navigate('MainScreen', { characterId, userId });
   };
 
   const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -331,11 +360,7 @@ export default function VideoScreen() {
           <Video
             key={videoKey}  
             ref={videoRef}
-            source={
-              videoUri
-                ? { uri: videoUri } // 如果有動態網址就播這個
-                : require('../assets/no1.mp4') // 沒有的話就播預設本地影片
-            }
+            source={{ uri: videoUri }}
             style={styles.mainImage}
             resizeMode="cover"
             shouldPlay

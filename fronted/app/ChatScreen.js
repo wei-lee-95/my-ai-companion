@@ -472,6 +472,9 @@ export default function ChatScreen() {
         console.log('✅ 標題產生成功：', json.title);
 
         navigation.navigate('MemoryDetail', {
+          characterId: characterId, 
+          userId: userId, 
+          name: name,
           category_title: cat.title,
           icon: cat.icon,
           fromChat: true,

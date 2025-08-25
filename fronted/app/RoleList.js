@@ -53,6 +53,32 @@ export default function RoleList() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleDeleteCharacterAsync = async (id) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.DELETE_CHARACTER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ character_id: id }),
+    });
+    const result = await response.json();
+
+    if (!result.success) {
+      alert('刪除角色失敗');
+      return;
+    }
+
+    setCharacters(prev => {
+      const addButton = prev.find(item => item.isAddButton);
+      const filtered = prev.filter(item => item.id !== id && !item.isAddButton);
+      return [addButton, ...filtered];
+    });
+
+  } catch (e) {
+    console.error(e);
+    alert('刪除角色時發生錯誤');
+  }
+  };
+
 
   const handleAddCharacter = () => {
     navigation.navigate('GenderRelationshipPicker',{ userId });
@@ -67,12 +93,8 @@ export default function RoleList() {
         {
           text: "刪除",
           style: "destructive",
-          onPress: () => {
-            setCharacters((prev) => prev.filter((item) => item.id !== id && !item.isAddButton));
-            // 保留加號按鈕
-            const addButton = prev.find((item) => item.isAddButton);
-            return [addButton, ...prev.filter((item) => item.id !== id && !item.isAddButton)];
-          },
+          onPress: () => handleDeleteCharacterAsync(id) // 這裡不要直接 async
+
         },
       ]
     );

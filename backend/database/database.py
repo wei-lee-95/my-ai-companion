@@ -777,14 +777,14 @@ class ChatModel:
         return self.db.execute_query(sql, (message_id,))
     
 
-def update_message(self, ooc_text: str, message_id: int) -> int:
-        """根據 message_id 修改 content 內容 變成 ooc_text"""
-        sql ="""
-        UPDATE chat_messages
-        SET content = ?
-        WHERE id = ?
-        """
-        return self.db.execute_update(sql, (ooc_text, message_id))
+    def update_message(self, ooc_text: str, message_id: int) -> int:
+            """根據 message_id 修改 content 內容 變成 ooc_text"""
+            sql ="""
+            UPDATE chat_messages
+            SET content = ?
+            WHERE id = ?
+            """
+            return self.db.execute_update(sql, (ooc_text, message_id))
 class VedioModel:
     """視訊資料模型"""
 
@@ -806,11 +806,33 @@ class VedioModel:
         """取出特定角色的特定情緒圖"""
 
         sql = """
-        SELECT id, emotion, emotion_image_path
+        SELECT id, emotion, emotion_image_path, vedio_path_1, vedio_path_1_no 
         FROM character_animations
         WHERE character_id = ? AND emotion = ?
         """
         return self.db.execute_query(sql, (character_id, emotion))
+    
+    def get_gender(self, character_id: int, user_id: str) -> List[sqlite3.Row]:
+        """取出特定角色的性別"""
+
+        sql = """
+        SELECT id, user_id, name, gender
+        FROM characters
+        WHERE id = ? AND user_id = ?
+        """
+        return self.db.execute_query(sql, (character_id, user_id))
+    
+    def get_pitch_and_rate(self, character_id: int) -> List[sqlite3.Row]:
+        """取出特定角色的語音設定 (voice_model_name, pitch, speed)"""
+
+        sql = """
+        SELECT voice_model_name, pitch_adjustment AS pitch, speed_adjustment AS rate
+        FROM character_voices
+        WHERE character_id = ?
+        """
+        return self.db.execute_query(sql, (character_id,))
+    
+
 
 
 # 全域資料庫管理器實例

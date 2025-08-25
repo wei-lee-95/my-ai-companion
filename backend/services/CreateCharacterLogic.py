@@ -119,5 +119,15 @@ def update_animation_path(character_id: int):
     except Exception as e:
         print(f"❌ update_animation_image_path 失敗：角色 ID {character_id}, error={e}")
 
+def delete_character(character_id: int):
 
+    if not character_id:
+        print(f"❌ 找不到角色 ID {character_id}")
+        return
+
+    try:
+        character_model.delete_character(character_id)
+        print(f"✅ 刪除角色成功：角色 ID {character_id}")
+    except Exception as e:
+        print(f"❌ 刪除角色失敗：角色 ID {character_id}, error={e}")
 

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from services.CreateCharacterLogic import create_character_db, update_appearance_clothingstyle, update_voice_reference, update_appearance_image_path, update_animation_path, update_voice_path
+from services.CreateCharacterLogic import create_character_db, update_appearance_clothingstyle, update_voice_reference, update_appearance_image_path, update_animation_path, update_voice_path, delete_character
 from database.migrate_data import DataMigrator
 import traceback
 
@@ -155,5 +155,20 @@ def api_update_voice_path():
 
         return jsonify({"success": True, "message": "api_update_voice_path 更新成功"})
 
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    
+@createcharacter_bp.route('/delete_character', methods=['POST'])
+def api_delete_character():
+    try:
+        data = request.get_json()
+        character_id = data.get("character_id")
+
+        if not character_id :
+            return jsonify({"success": False, "error": "缺少 character_id"}), 400
+        
+        delete_character(character_id)
+
+        return jsonify({"success": True, "message": "角色刪除成功"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

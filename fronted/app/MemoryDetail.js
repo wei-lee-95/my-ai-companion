@@ -240,7 +240,7 @@ export default function MemoryDetail() {
 
   const handleBack = () => {
     if (fromChat) {
-      navigation.navigate('ChatScreen');
+      navigation.navigate('ChatScreen', { characterId, userId, name });
     } else {
       navigation.goBack();
     }

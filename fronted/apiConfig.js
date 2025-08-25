@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     UPDATE_APPEARANCE_PATH: `${BASE_URL}/update_appearance_path`,
     UPDATE_VOICE_PATH: `${BASE_URL}/update_voice_path`,
     UPDATE_ANIMATION_PATH: `${BASE_URL}/update_animation_path`,
+    DELETE_CHARACTER: `${BASE_URL}/delete_character`,
 
 
     // RouteInfo //用於get
@@ -47,6 +48,10 @@ export const API_ENDPOINTS = {
     VIDEO_VOICE: `${BASE_URL}/video-voice`,
     VIDEO_RESPONSE: `${BASE_URL}/video-response`,
     VIDEO_PHOTO: `${BASE_URL}/video-photo`,
+    VIDEO_GENERATE_VOICE: `${BASE_URL}/video-generate-voice`,
+    VIDEO_NO_LIP_SYNC: `${BASE_URL}/get-no-lip-sync-video`,
+    VIDEO_DEFAULT: `${BASE_URL}/get-default-video`,
+
 
     //Memory
     GET_MEMORY_CATEGORIES: `${BASE_URL}/get-memory-categories`,
