@@ -27,27 +27,32 @@ export default function MemoryList() {
     }, [route.params?.deleteKey])
   );*/
 
-  useEffect(() => {
+  const fetchMemories = useCallback(async () => {
     if (!character_id || !category_id) return;
 
     setLoading(true);
-    fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${character_id}&category_id=${category_id}`)
-      .then(res => res.json())
-      .then(json => {
-        if (json.memories && Array.isArray(json.memories)) {
-          // 從回傳記憶中擷取 memory_title 和 date 方便顯示
-          // 這裡你也可以做排序或篩選
-          setMemories(json.memories);
-        } else {
-          setMemories([]);
-        }
-      })
-      .catch(err => {
-        console.error('取得記憶詳情失敗', err);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${character_id}&category_id=${category_id}`);
+      const json = await res.json();
+      if (json.memories && Array.isArray(json.memories)) {
+        setMemories(json.memories);
+      } else {
         setMemories([]);
-      })
-      .finally(() => setLoading(false));
+      }
+    } catch (err) {
+      console.error('取得記憶詳情失敗', err);
+      setMemories([]);
+    } finally {
+      setLoading(false);
+    }
   }, [character_id, category_id]);
+
+  // 每次畫面 focus 時重新抓資料
+  useFocusEffect(
+    useCallback(() => {
+      fetchMemories();
+    }, [fetchMemories])
+  );
 
   return (
     <View style={styles.container}>

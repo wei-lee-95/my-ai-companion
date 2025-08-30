@@ -125,18 +125,18 @@ const handleGenerateResult = async () => {
       colab_url: VIDEO_API_URL
     };
 
-    const videoResponse = await fetch(API_ENDPOINTS.GENERATE_VIDEO, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(videoPayload),
-    });
+    // const videoResponse = await fetch(API_ENDPOINTS.GENERATE_VIDEO, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(videoPayload),
+    // });
 
-    if (!videoResponse.ok) {
-      throw new Error('影片生成失敗');
-    }
+    // if (!videoResponse.ok) {
+    //   throw new Error('影片生成失敗');
+    // }
 
-    const videoResult = await videoResponse.json();
-    console.log('影片生成結果:', videoResult);
+    // const videoResult = await videoResponse.json();
+    // console.log('影片生成結果:', videoResult);
 
 
     } catch (error) {

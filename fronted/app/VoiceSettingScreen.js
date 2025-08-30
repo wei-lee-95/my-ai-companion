@@ -82,11 +82,11 @@ export default function VoiceSettingScreen() {
         });
         const generateResult = await generateRes.json();
         console.log('生成語音成功：', generateResult);
-        setLoading(false);
         if (generateResult.audio_base64) {
           setGeneratedBase64(generateResult.audio_base64);
           alert('語音生成完成，開始播放...');
           await handlePlay(generateResult.audio_base64);  // 播放生成音檔
+          setLoading(false);
         } else {
           alert('生成音檔失敗，無法播放');
         }
@@ -134,18 +134,21 @@ export default function VoiceSettingScreen() {
         console.log('base64 長度：', data.audio_base64.length);
 
         const uri = `data:audio/wav;base64,${data.audio_base64}`;
-        const { sound, status } = await Audio.Sound.createAsync(
+        const { sound } = await Audio.Sound.createAsync(
           { uri },
           { shouldPlay: true }
         );
 
         setSound(sound);
 
-        if (status.isLoaded) {
-          console.log('播放成功，音訊已載入');
-        } else {
-          console.warn('音訊未成功載入');
-        }
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        });
+
+        console.log('音訊播放中');
+
       } else {
         alert('找不到音檔');
       }

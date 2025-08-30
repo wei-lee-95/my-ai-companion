@@ -199,7 +199,7 @@ def generate_voice():
 
 @voice_bp.route('/get-audio-base64', methods=['GET'])
 def get_audio_base64():
-    audio_path = os.path.join(BASE_DIR, "Outputs", "Voice", "final_output.wav")
+    audio_path = os.path.join(BASE_DIR, "outputs", "Voice", "final_output.wav")
     if os.path.exists(audio_path):
         with open(audio_path, "rb") as f:
             encoded = base64.b64encode(f.read()).decode("utf-8")

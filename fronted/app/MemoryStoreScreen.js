@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, Dimensions,
   StyleSheet, TextInput, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 function formatDate(dateStr) {
@@ -32,64 +32,62 @@ export default function MemoryStoreScreen() {
   const [newIcon, setNewIcon] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 1. 拿分類
-  useEffect(() => {
+  const fetchCategoriesAndMemories = useCallback(async () => {
     if (!characterId) return;
     setLoading(true);
 
-    fetch(`${API_ENDPOINTS.GET_MEMORY_CATEGORIES}?character_id=${characterId}`)
-      .then(res => res.json())
-      .then(json => {
-        if (!json.categories) throw new Error("無法取得 categories");
-        const cats = json.categories.map(item => ({
-          key: item.id.toString(),
-          id: item.id,
-          title: item.category,
-          icon: item.icon || '', // icon 直接用資料庫的 icon
-        }));
-        setCategories(cats);
-      })
-      .catch(err => {
-        console.error('取得分類失敗', err);
-      })
-  }, [characterId]);
+    try {
+      // 1. 先抓分類
+      const resCats = await fetch(`${API_ENDPOINTS.GET_MEMORY_CATEGORIES}?character_id=${characterId}`);
+      const jsonCats = await resCats.json();
+      if (!jsonCats.categories) throw new Error("無法取得 categories");
 
+      const cats = jsonCats.categories.map(item => ({
+        key: item.id.toString(),
+        id: item.id,
+        title: item.category,
+        icon: item.icon || '',
+      }));
+      setCategories(cats);
 
-  // 拿每個分類的記憶詳情並找最大 memory_id
-  useEffect(() => {
-    if (categories.length === 0) return;
-
-    setLoading(true);
-    const fetchDetailsForCategories = async () => {
-      const results = {};
-
-      for (const cat of categories) {
+      // 2. 抓每個分類的最新回憶
+      const latestResults = {};
+      for (const cat of cats) {
         try {
-          const res = await fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${characterId}&category_id=${cat.id}`);
-          const json = await res.json();
-          if (json.memories && json.memories.length > 0) {
-            // 找最大 memory_id
-            const latestMemory = json.memories.reduce((maxMem, mem) =>
+          const resMem = await fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${characterId}&category_id=${cat.id}`);
+          const jsonMem = await resMem.json();
+          if (jsonMem.memories && jsonMem.memories.length > 0) {
+            const latestMemory = jsonMem.memories.reduce((maxMem, mem) =>
               mem.memory_id > maxMem.memory_id ? mem : maxMem
             );
-            results[cat.id] = {
+            latestResults[cat.id] = {
               memory_title: latestMemory.memory_title,
               date: latestMemory.date,
             };
           } else {
-            results[cat.id] = null;
+            latestResults[cat.id] = null;
           }
         } catch (e) {
           console.error(`取得分類 ${cat.title} 記憶失敗`, e);
-          results[cat.id] = null;
+          latestResults[cat.id] = null;
         }
       }
-      setLatestMemoriesByCategory(results);
+      setLatestMemoriesByCategory(latestResults);
+    } catch (err) {
+      console.error('取得分類失敗', err);
+      setCategories([]);
+      setLatestMemoriesByCategory({});
+    } finally {
       setLoading(false);
-    };
+    }
+  }, [characterId]);
 
-    fetchDetailsForCategories();
-  }, [categories, characterId]);
+  // 每次畫面 focus 都刷新
+  useFocusEffect(
+    useCallback(() => {
+      fetchCategoriesAndMemories();
+    }, [fetchCategoriesAndMemories])
+  );
 
  
   const handleNewCategory = async () => {

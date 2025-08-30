@@ -58,7 +58,7 @@ def chat():
         stats["affection"] = str(max(0, int(stats["affection"]) - days_gap * 2))
 
     # 取得聊天歷史 (限制最新 50 條)
-    chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
+    chat_histories_res = get_chat_histories_by_sessions(character_id, user_id, limit=50)
     if not chat_histories_res["success"]:
         return jsonify({"error": chat_histories_res["message"]}), 404
     messages = chat_histories_res["data"]
@@ -68,11 +68,13 @@ def chat():
         # 新角色
         system_prompt = {"role": "system", "content": generate_prompt(profile, stats)}
         messages = [system_prompt, {"role": "user", "content": user_input}]
+        print(messages)
     else:
         # 舊角色
         system_prompt = {"role": "system", "content": generate_prompt_old(profile, stats)}
         messages.append(system_prompt)
         messages.append({"role": "user", "content": user_input})
+        print(messages)
 
     # GPT 回應
     response = client.chat.completions.create(

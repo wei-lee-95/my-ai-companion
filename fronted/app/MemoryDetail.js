@@ -35,6 +35,9 @@ export default function MemoryDetail() {
     chatContent,
     memory_title,
     date,
+    characterId,   // ← 你缺少這兩個
+    userId,
+    name
   } = params;
 
   const [memoryTitle, setMemoryTitle] = useState(memory_title);
@@ -154,7 +157,7 @@ export default function MemoryDetail() {
       const json = await res.json();
 
       if (res.ok && json.status === 'success') {
-        alert('成功', '刪除成功', [
+        Alert.alert('成功', '刪除成功', [
           {
             text: '確定',
             onPress: () => {
@@ -240,7 +243,7 @@ export default function MemoryDetail() {
 
   const handleBack = () => {
     if (fromChat) {
-      navigation.navigate('ChatScreen', { characterId, userId, name });
+      navigation.goBack();
     } else {
       navigation.goBack();
     }
