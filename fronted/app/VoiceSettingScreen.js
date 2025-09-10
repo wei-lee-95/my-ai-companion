@@ -125,36 +125,20 @@ export default function VoiceSettingScreen() {
 
 
   // ✅ 播放按鈕（從後端取 base64 播放）
-  const handlePlay = async () => {
+  const handlePlay = async (base64Audio) => {
     try {
-      const response = await fetch(API_ENDPOINTS.GET_AUDIO_BASE64);
-      const data = await response.json();
+      const fileUri = FileSystem.cacheDirectory + "generated_audio.wav";
+      await FileSystem.writeAsStringAsync(fileUri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
 
-      if (data.audio_base64) {
-        console.log('base64 長度：', data.audio_base64.length);
+      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
 
-        const uri = `data:audio/wav;base64,${data.audio_base64}`;
-        const { sound } = await Audio.Sound.createAsync(
-          { uri },
-          { shouldPlay: true }
-        );
-
-        setSound(sound);
-
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
-
-        console.log('音訊播放中');
-
-      } else {
-        alert('找不到音檔');
-      }
+      sound.setOnPlaybackStatusUpdate(status => {
+        if (status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
     } catch (error) {
-      console.error('播放錯誤：', error);
-      alert('播放失敗');
+      console.error("播放失敗", error);
     }
   };
 
@@ -212,7 +196,7 @@ export default function VoiceSettingScreen() {
 
       <View style={styles.cardBox}>
         <Text style={styles.cardTitle}>最終聲音確認 & 調整</Text>
-        <TouchableOpacity onPress={handlePlay} style={styles.finalRow}>
+        <TouchableOpacity onPress={() => handlePlay(generatedBase64)} style={styles.finalRow}>
 
           <Ionicons name="play" size={24} color="black" />
           <Text style={{ marginLeft: 10 }}>🎵 播放語音</Text>
