@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { API_ENDPOINTS } from '../../fronted/apiConfig'; 
 
@@ -22,6 +22,8 @@ export default function PhotoUploadScreen() {
   const [loading, setLoading] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
   const navigation = useNavigation();
+  const route = useRoute();
+  const { characterId, name } = route.params;
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -53,19 +55,22 @@ export default function PhotoUploadScreen() {
       type: 'image/jpeg',
     });
     formData.append('user_prompt', userPrompt);
+    formData.append("character_id", characterId);
 
     try {
       const response = await fetch(API_ENDPOINTS.GENERATE, {
         method: 'POST',
-        headers: {
+        /*headers: {
           'Content-Type': 'multipart/form-data',
-        },
+        },*/
         body: formData,
       });
 
       const data = await response.json();
       setResultImage(data.result);
+      setUserPrompt('');  // ✅ 清空輸入欄位
     } catch (error) {
+      console.error("upload error:", error);
       Alert.alert('上傳失敗', '請檢查伺服器是否啟動');
     } finally {
       setLoading(false);
@@ -99,8 +104,11 @@ export default function PhotoUploadScreen() {
       extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#333" />
+      <TouchableOpacity 
+        onPress={() => navigation.goBack()} 
+        style={styles.backButton}
+      >
+        <Text style={styles.backButtonText}>≪</Text>
       </TouchableOpacity>
 
       <Text style={styles.title}>照片合成</Text>
@@ -165,7 +173,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     left: 15,
-    padding: 8,
+    padding: 6,
+    backgroundColor: '#000',
+    borderRadius: 15,
+    zIndex: 10,
+  },
+  backButtonText: {
+    fontSize: 18,
+    color: '#fcf7ef',
   },
   title: {
     paddingTop: 40,

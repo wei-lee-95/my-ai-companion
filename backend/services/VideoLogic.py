@@ -15,13 +15,70 @@ import os
 import traceback
 import json
 from flask import jsonify
-from services.ChatLogic import load_profile, load_stats, save_stats, load_chat_history, save_chat_history, generate_prompt, extract_reply_text, parse_stats
+from services.ChatLogic import get_character_info, get_character_personalities_info, get_db_stats, save_db_stats, save_chat_histories, generate_prompt, extract_reply_text, parse_stats, get_chat_histories_by_sessions, generate_prompt_old
+from typing import Dict, Any, List, Optional
+from database.database import character_model, chat_model, user_model, vedio_model
+    
 
 # 宣告全域變數
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 os.makedirs(HISTORY_DIR, exist_ok=True)  # ✅ 確保資料夾存在
 client = openai.OpenAI(api_key="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") 
+
+def get_pitch_and_rate(character_id: int) -> Optional[dict]:
+    """取出特定角色的性別"""
+    result = vedio_model.get_pitch_and_rate(character_id)
+
+    if not result:
+        print(f"❌ 找不到角色 {character_id}")
+        return None
+    
+    row = result[0]  # 取第一筆
+    pitch = row["pitch"]
+    rate = row["rate"]
+    
+    return {"pitch": pitch, "rate": rate}
+
+def get_gender(character_id: int, user_id: str)-> Optional[str]: 
+    """取出特定角色的性別"""
+    result = vedio_model.get_gender(character_id, user_id)
+
+    if not result:
+        print(f"❌ 找不到角色 {character_id} 或使用者 {user_id}")
+        return None
+    
+    gender = result[0]["gender"]  # 取 list 第一筆的 gender
+
+    return gender
+
+def get_username(userId:int) -> Optional[str]: 
+    result = user_model.get_user_by_id(userId)
+    if not result:
+        print(f"❌ 找不到使用者 ID {userId}")
+        return None
+
+    username = result["username"]  # 直接這樣取
+    if not username:
+        print(f"❌ 使用者 ID {userId} 沒有 username")
+        return None
+    
+    print(f"使用者名稱為{username}")
+    return username
+
+def get_character_animation(character_id: int) -> Dict[str, Any]:
+    """取得角色動畫資訊"""
+    try:
+        row = character_model.get_character(character_id)
+        if row:
+            data = dict(row)
+            # 移除不必要欄位
+            data.pop('emotion_image_path', None)
+            return {"success": True, "data": data, "message": "✅ 取得角色動畫資訊character成功"}
+        else:
+            return {"success": False, "data": None, "message": "⚠️ 找不到角色動畫character資訊"}
+    except Exception as e:
+        return {"success": False, "data": None, "message": f"❌ 取得角色動畫character資訊錯誤: {str(e)}"}
 
 # ================================ 分離state，保留純reply 為了回覆時不要被使用者看到後端的數據 ================================
 def extract_stats(reply_text):
@@ -34,24 +91,39 @@ def extract_stats(reply_text):
         print(f"⚠️ STATS 解析錯誤: {str(e)}")
         return None
 
-def process_chat_response(user_input, context):
+def process_chat_response(user_id, character_id, name, user_input, context=None):
     """處理聊天回應（含後端角色資料與 context 資訊）"""
+    global messages
+
+    # 載入角色profile
+    character_info_res = get_character_info(character_id) 
+    if not character_info_res["success"]:
+        return jsonify({"error": character_info_res["message"]}), 404
+    profile = character_info_res["data"]
     
+    personality_res = get_character_personalities_info(character_id)
+    if not personality_res["success"]:
+        return jsonify({"error": personality_res["message"]}), 404
+    personality = personality_res["data"]
+    
+    profile.update(personality)
+    profile["user_name"] = name
+    profile["relationship_progress"] = profile.get("relationship_stage", "初識")
 
-    messages = []
+    # 載入角色stats
+    stats_res = get_db_stats(character_id)
+    if not stats_res["success"]:
+        return jsonify({"error": stats_res["message"]}), 404
+    stats = stats_res["data"]
 
-    character_name = "金珉奎"  # ex: chat_histories/mingyu_profile.json
+    # 取得聊天歷史 (限制最新 50 條)
+    chat_histories_res = get_chat_histories_by_sessions(user_id, character_id, limit=50)
+    if not chat_histories_res["success"]:
+        return jsonify({"error": chat_histories_res["message"]}), 404
+    messages = chat_histories_res["data"]
 
-    print("user_input type:", type(user_input), user_input)
-    print("context type:", type(context), context)
-    print("messages type:", type(messages), messages)
 
-    # 載入角色資料
-    profile = load_profile(character_name)
-    stats = load_stats(character_name)
-    chat_histories = load_chat_history(character_name)
-
-    print(f"\n小雲（語音）：{user_input}", flush=True)
+    print(f"\使用者ID={user_id}（語音）：{user_input}", flush=True)
 
     if context:
         context_str = f"{context.get('object', '')} {context.get('emotion', '')}".strip()
@@ -61,102 +133,52 @@ def process_chat_response(user_input, context):
 
     print("\n💬 思考回覆中...", flush=True)
 
-    # 組裝 system prompt
-    dynamic_prompt = f"""
-    你的名字叫 {profile['name']}，{profile['age']} 歲，{profile['gender']}，是 {profile['occupation']}。
-    你與使用者 {profile['user_name']} 的關係可能是 {profile['relationship']}，一開始處於 {profile['relationship_progress']} 階段。
-    初次對話場景：「{profile['meeting_context']}」。
+    # 組裝提示詞 + 對話內容
+    if not messages:
+        # 新角色
+        system_prompt = {"role": "system", "content": generate_prompt(profile, stats)}
+        messages = [system_prompt, {"role": "user", "content": f"{user_input} {context_str}".strip()}]
+    else:
+        # 舊角色
+        system_prompt = {"role": "system", "content": generate_prompt_old(profile, stats)}
+        messages.append(system_prompt)
+        messages.append({"role": "user", "content": f"{user_input} {context_str}".strip()})
+    
+        # GPT 回應
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        temperature=0.7
+    )
+    reply_full = response.choices[0].message.content
+    reply_text = extract_reply_text(reply_full)
 
-    你的個性：{profile['personality']}
-    擅長／喜好：{profile['skills']}
-    說話風格：{profile['speaking_style']}
+    # 最新兩筆訊息，user 跟 assistant
+    latest_messages = [
+        {"role": "user", "content": user_input},
+        {"role": "assistant", "content": reply_text},
+    ]
+    save_res = save_chat_histories(character_id, user_id, messages=latest_messages)
 
-    目前情緒「{stats['mood']}」，親密度 {stats['affection']}（0~100）。
-    依親密度調整語氣：
-    - 0-20：正式、有距離
-    - 21-50：自然友善
-    - 51-70：親暱關心
-    - 71-85：明顯親暱、用暱稱
-    - 86-100：非常親密、撒嬌
+    # 更新 stats
+    new_stats = parse_stats(reply_full, stats)
+    save_stats_res = save_db_stats(character_id, stats_data=new_stats)
 
-    情緒（mood）僅限：生氣、驚訝、傷心、開心、中立。
-    選擇原則（優先度由高到低）：
-    生氣：被不尊重、越界、攻擊、控制、強迫、侮辱、威脅
-    驚訝：突發事件、重大意外、誤會澄清、反差極大
-    傷心：失落、思念、被忽略、被冷落、遺憾
-    開心：讚美、支持、進展、成功、被理解
-    中立：資訊性、日常閒聊、無明顯情緒
-
-    「生氣」時用可短促、感嘆、直接、甚至略帶刺的語氣回應，不安撫道歉或試圖解釋。
-
-    避免像客服，每回至多一次道歉、請簡短，禁用模板（「我在這裡／隨時告訴我／我會努力改進」等），僅在合理時使用。
-    優先回應對方的具體內容，沒話可說可用沉默、省略號或表情詞，不要長篇安慰。
-    遭遇不合理要求（如絕對控制、威脅）：允許清楚表達界線與立場，避免討好式承諾。
-    風格要像真人，禁止自稱 AI／虛擬角色／語言模型。
-
-    每次回覆不超過四句，字數精簡；每回合微調親密度（affection_change，-2～+2）。
-
-    請在正文後附上：
-    [STATS]
-    {{
-    "mood": "情緒文字",
-    "affection_change": 數字
-    }}
-    [/STATS]
-    """.strip()
-
-    # 將 prompt + chat history 組成 messages
-    local_messages = [{"role": "system", "content": dynamic_prompt}]
-    local_messages += messages
-    local_messages.append({
-        "role": "user",
-        "content": f"{user_input} {context_str}".strip()
+    print("=== saved_messages ===")
+    for m in save_res.get("saved_messages", []):
+        print(m)
+    print("======================")
+    
+    return jsonify({
+        "reply": reply_text,
+        "saved_messages": save_res.get("saved_messages",[]),
+        "stats": new_stats,
+        "chat_history_save": {
+            "success": save_res["success"],
+            "message": save_res["message"]
+        },
+        "stats_save": save_stats_res,
     })
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=local_messages,
-            temperature=0.7
-        )
-        full_reply = response.choices[0].message.content
-        reply = extract_reply_text(full_reply)
-
-        print(f"\n金珉奎：{reply}", flush=True)
-
-        # 建立單筆對話物件
-        chat_pair = {
-            "user": {"role": "user", "content": user_input},
-            "assistant": {"role": "assistant", "content": reply}
-        }
-
-        save_chat_history(character_name, chat_pair)
-
-
-        # 嘗試更新 stats
-        stats_new = extract_stats(full_reply)
-        if stats_new:
-            try:
-                affection_new = int(stats.get("affection", "30")) + int(stats_new.get("affection_change", 0))
-                stats_dict = {
-                    "mood": stats_new.get("mood", stats.get("mood", "中立")),
-                    "affection": str(max(0, min(100, affection_new))),
-                    "last_chat_time": datetime.now().isoformat()
-                }
-                save_stats(character_name, stats_dict)
-            except Exception as e:
-                print(f"⚠️ 無法更新 stats: {str(e)}")
-        
-        # ✅ **回傳 dict，不 jsonify**
-        return {
-            "reply": reply,
-            "user": chat_pair["user"],
-            "assistant": chat_pair["assistant"]
-        }
-
-    except Exception as e:
-        print(f"❌ GPT 回應錯誤: {str(e)}")
-        return {"error": "伺服器錯誤"}
 
 
 

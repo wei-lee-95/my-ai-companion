@@ -14,10 +14,10 @@ import * as FileSystem from 'expo-file-system';
 import { API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function AppearanceSettingScreen() {
-  const VIDEO_API_URL = "https://0828e917876f.ngrok-free.app";
+  const VIDEO_API_URL = "https://c0dfb9a48201.ngrok-free.app";
   const navigation = useNavigation();
   const route = useRoute();
-  const {gender} = route.params || {};
+  const {gender, relationship, name, userId} = route.params || {};
   const [imageUploaded, setImageUploaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generatedResult, setGeneratedResult] = useState(false);
@@ -62,13 +62,15 @@ const handleGenerateResult = async () => {
 
   const endpoint = gender === '男性' 
     ? API_ENDPOINTS.GENERATE_APPEARANCE_BOY
-    : API_ENDPOINTS.GENERATE_APPEARANCE_BOY;
+    : API_ENDPOINTS.GENERATE_APPEARANCE_GIRL;
 
   try {
     // 準備要傳送的資料
     const payload = {
       style: styleMap[selectedStyle],
-      imageBase64: imageBase64
+      imageBase64: imageBase64,
+      userId: userId,
+      name: name
     };
 
     //發送 POST 請求到後端
@@ -85,7 +87,7 @@ const handleGenerateResult = async () => {
     // const result = await response.json();
     
     // 再發送一個請求獲取 base64 格式的圖片
-    const base64Response = await fetch(API_ENDPOINTS.GET_IMAGE_BASE64);
+    const base64Response = await fetch(`${API_ENDPOINTS.GET_IMAGE_BASE64}?userId=${userId}&name=${name}`);
     if (!base64Response.ok) {
       throw new Error('獲取 base64 圖片失敗');
     }
@@ -100,48 +102,48 @@ const handleGenerateResult = async () => {
 
     // ✅ 成功生成外觀後，自動呼叫 generate-emotion
     const emotionPayload = {
-      userId: "test2",      // 你前端保存的使用者名稱
-      character_name: "金珉奎", // 角色名稱
+      userId: userId,      // 你前端保存的使用者名稱
+      name: name, // 角色名稱
     };
 
-  //   const emotionResponse = await fetch(API_ENDPOINTS.GENERATE_EMOTION, {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(emotionPayload),
-  //   });
+    // const emotionResponse = await fetch(API_ENDPOINTS.GENERATE_EMOTION, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(emotionPayload),
+    // });
 
-  //   if (!emotionResponse.ok) {
-  //     throw new Error('生成表情失敗');
-  //   }
+    // if (!emotionResponse.ok) {
+    //   throw new Error('生成表情失敗');
+    // }
 
-  //   const emotionResult = await emotionResponse.json();
-  //   console.log('生成表情結果:', emotionResult);
+    // const emotionResult = await emotionResponse.json();
+    // console.log('生成表情結果:', emotionResult);
 
-  //   const videoPayload = {
-  //   username: "test2",
-  //   character_name: "金珉奎",
-  //   colab_url: VIDEO_API_URL
-  // };
+    const videoPayload = {
+      userId: userId,
+      name: name,
+      colab_url: VIDEO_API_URL
+    };
 
-  // const videoResponse = await fetch(API_ENDPOINTS.GENERATE_VIDEO, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(videoPayload),
-  // });
+    // const videoResponse = await fetch(API_ENDPOINTS.GENERATE_VIDEO, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(videoPayload),
+    // });
 
-  // if (!videoResponse.ok) {
-  //   throw new Error('影片生成失敗');
-  // }
+    // if (!videoResponse.ok) {
+    //   throw new Error('影片生成失敗');
+    // }
 
-  // const videoResult = await videoResponse.json();
-  // console.log('影片生成結果:', videoResult);
+    // const videoResult = await videoResponse.json();
+    // console.log('影片生成結果:', videoResult);
 
 
-  } catch (error) {
-    console.error('生成失敗:', error);
-    Alert.alert('生成失敗', error.message);
-  }
-};
+    } catch (error) {
+      console.error('生成失敗:', error);
+      Alert.alert('生成失敗', error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>

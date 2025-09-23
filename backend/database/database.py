@@ -123,6 +123,15 @@ class UserModel:
         sql = "UPDATE users SET last_login = ? WHERE id = ?"
         self.db.execute_update(sql, (now_str, user_id,))
 
+    def update_user_profile(self, user_id: int, email:str, password:str, age:int ) -> int:
+        """更新使用者的資料"""
+        sql="""
+        UPDATE users
+        SET email = ?, password_hash = ?, age = ?
+        WHERE id = ?
+        """
+        self.db.execute_update(sql, (email, password, age, user_id,))
+
 class CharacterModel:
     """角色資料模型"""
     
@@ -187,7 +196,7 @@ class CharacterModel:
             print(f"[DEBUG] get_character_personality({character_id}) found nothing")
             return None
         
-    def get_username_by_character_id(character_id: int) -> Optional[str]:
+    def get_username_by_character_id(self, character_id: int) -> Optional[str]:
         """根據 character_id 取得對應的 username"""
          
         sql = """
@@ -768,6 +777,14 @@ class ChatModel:
         return self.db.execute_query(sql, (message_id,))
     
 
+    def update_message(self, ooc_text: str, message_id: int) -> int:
+            """根據 message_id 修改 content 內容 變成 ooc_text"""
+            sql ="""
+            UPDATE chat_messages
+            SET content = ?
+            WHERE id = ?
+            """
+            return self.db.execute_update(sql, (ooc_text, message_id))
 class VedioModel:
     """視訊資料模型"""
 
@@ -789,11 +806,33 @@ class VedioModel:
         """取出特定角色的特定情緒圖"""
 
         sql = """
-        SELECT id, emotion, emotion_image_path
+        SELECT id, emotion, emotion_image_path, vedio_path_1, vedio_path_1_no 
         FROM character_animations
         WHERE character_id = ? AND emotion = ?
         """
         return self.db.execute_query(sql, (character_id, emotion))
+    
+    def get_gender(self, character_id: int, user_id: str) -> List[sqlite3.Row]:
+        """取出特定角色的性別"""
+
+        sql = """
+        SELECT id, user_id, name, gender
+        FROM characters
+        WHERE id = ? AND user_id = ?
+        """
+        return self.db.execute_query(sql, (character_id, user_id))
+    
+    def get_pitch_and_rate(self, character_id: int) -> List[sqlite3.Row]:
+        """取出特定角色的語音設定 (voice_model_name, pitch, speed)"""
+
+        sql = """
+        SELECT voice_model_name, pitch_adjustment AS pitch, speed_adjustment AS rate
+        FROM character_voices
+        WHERE character_id = ?
+        """
+        return self.db.execute_query(sql, (character_id,))
+    
+
 
 
 # 全域資料庫管理器實例

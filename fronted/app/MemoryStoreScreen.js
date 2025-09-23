@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, Dimensions,
   StyleSheet, TextInput, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 function formatDate(dateStr) {
   // 如果原本就長得像 '2025年7月29日'，直接回傳
@@ -21,66 +22,123 @@ function formatDate(dateStr) {
 
 export default function MemoryStoreScreen() {
   const navigation = useNavigation();
-  const [dataByCategory, setDataByCategory] = useState({
-    anniversary: [
-      {
-        key: '1',
-        event: '第一次見面',
-        date: '2023年5月6日',
-        time: Date.parse('2023-05-06'),
-        fromChat: false,
-      },
-    ],
-    event: [
-      {
-        key: '1',
-        event: '水族館約會',
-        date: '2024年7月6日',
-        time: Date.parse('2024-07-06'),
-        fromChat: false,
-      },
-      {
-        key: '2',
-        event: '露營日',
-        date: '2025年5月20日',
-        time: Date.parse('2025-05-20'),
-        fromChat: false,
-      },
-    ],
-    emotion: [
-      {
-        key: '1',
-        event: '第一次被他安慰',
-        date: '2025年8月23日',
-        time: Date.parse('2025-08-23'),
-        fromChat: false,
-      },
-    ],
-  });
-
-  const [categories, setCategories] = useState([
-    { key: 'anniversary', icon: '❤️', title: '紀念日' },
-    { key: 'event', icon: '📅', title: '事件' },
-    { key: 'emotion', icon: '😄', title: '情緒' },
-  ]);
-
+  const route = useRoute();
+  const { characterId, userId, name } = route.params; //from mainscreen
+  const [dataByCategory, setDataByCategory] = useState({});
+  const [latestMemoriesByCategory, setLatestMemoriesByCategory] = useState({});
+  const [categories, setCategories] = useState([])
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newIcon, setNewIcon] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const fetchCategoriesAndMemories = useCallback(async () => {
+    if (!characterId) return;
+    setLoading(true);
+
+    try {
+      // 1. 先抓分類
+      const resCats = await fetch(`${API_ENDPOINTS.GET_MEMORY_CATEGORIES}?character_id=${characterId}`);
+      const jsonCats = await resCats.json();
+      if (!jsonCats.categories) throw new Error("無法取得 categories");
+
+      const cats = jsonCats.categories.map(item => ({
+        key: item.id.toString(),
+        id: item.id,
+        title: item.category,
+        icon: item.icon || '',
+      }));
+      setCategories(cats);
+
+      // 2. 抓每個分類的最新回憶
+      const latestResults = {};
+      for (const cat of cats) {
+        try {
+          const resMem = await fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${characterId}&category_id=${cat.id}`);
+          const jsonMem = await resMem.json();
+          if (jsonMem.memories && jsonMem.memories.length > 0) {
+            const latestMemory = jsonMem.memories.reduce((maxMem, mem) =>
+              mem.memory_id > maxMem.memory_id ? mem : maxMem
+            );
+            latestResults[cat.id] = {
+              memory_title: latestMemory.memory_title,
+              date: latestMemory.date,
+            };
+          } else {
+            latestResults[cat.id] = null;
+          }
+        } catch (e) {
+          console.error(`取得分類 ${cat.title} 記憶失敗`, e);
+          latestResults[cat.id] = null;
+        }
+      }
+      setLatestMemoriesByCategory(latestResults);
+    } catch (err) {
+      console.error('取得分類失敗', err);
+      setCategories([]);
+      setLatestMemoriesByCategory({});
+    } finally {
+      setLoading(false);
+    }
+  }, [characterId]);
+
+  // 每次畫面 focus 都刷新
+  useFocusEffect(
+    useCallback(() => {
+      fetchCategoriesAndMemories();
+    }, [fetchCategoriesAndMemories])
+  );
+
+ 
+  const handleNewCategory = async () => {
+    if (!newTitle.trim() || !newIcon.trim()) return;
+ 
+    try {
+      const res = await fetch(`${API_ENDPOINTS.ADD_MEMORY_CATEGORY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character_id: characterId,
+          category: newTitle.trim(),
+          icon: newIcon.trim(),
+        }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        const newId = data.category_id; // 後端回傳的數字 ID
+        setCategories(prev => [...prev, {
+          key: newId.toString(),
+          id: newId, 
+          title: newTitle.trim(),
+          icon: newIcon.trim(),
+        }]);
+        setModalVisible(false);
+        setNewTitle('');
+        setNewIcon('');
+      } else {
+        alert('新增分類失敗: ' + (data.error || '未知錯誤'));
+      }
+    } catch (error) {
+      console.error('新增分類錯誤', error);
+      alert('新增分類發生錯誤，請稍後再試');
+    }
+  };
+
+
 
   const renderItem = ({ item }) => {
-  const latestItem = (dataByCategory[item.key] || [])
-    .slice()
-    .sort((a, b) => (b.time || 0) - (a.time || 0))[0];
+    const latestItem = latestMemoriesByCategory[item.id];
 
-    return (
+    return ( 
       <TouchableOpacity
         style={styles.card}
         onPress={() =>
           navigation.navigate('MemoryList', {
-            title: item.title,
-            icon: item.icon,
-            data: dataByCategory[item.key] || [],
+            character_id: characterId,
+            category_id: item.id,
+            category_title: item.title,
+            category_icon: item.icon,
           })
         }
       >
@@ -90,7 +148,7 @@ export default function MemoryStoreScreen() {
         </View>
         <Text style={styles.cardDate}>
           {latestItem
-            ? `${latestItem.event}｜${formatDate(latestItem.date)}`
+            ? `${latestItem.memory_title}｜${formatDate(latestItem.date)}`
             : '尚無紀錄'}
         </Text>
       </TouchableOpacity>
@@ -157,19 +215,7 @@ export default function MemoryStoreScreen() {
 
               <TouchableOpacity
                 style={styles.modalSave}
-                onPress={() => {
-                  if (!newTitle.trim() || !newIcon.trim()) return;
-                  const newKey = `custom-${Date.now()}`;
-                  setCategories((prev) => [...prev, {
-                    key: newKey,
-                    icon: newIcon.trim(),
-                    title: newTitle.trim(),
-                  }]);
-                  setDataByCategory((prev) => ({ ...prev, [newKey]: [] }));
-                  setModalVisible(false);
-                  setNewTitle('');
-                  setNewIcon('');
-                }}
+                onPress={handleNewCategory}
               >
                 <Text style={styles.modalSaveText}>儲存</Text>
               </TouchableOpacity>

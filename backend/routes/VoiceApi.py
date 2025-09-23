@@ -1,8 +1,26 @@
 from flask import Blueprint, request, jsonify
 import os, base64, logging, traceback
-from services.VoiceLogic import run_tts_script, run_prerequisites_script, run_infer_script, run_preprocess_script, run_extract_script, run_train_script, BASE_DIR
+from services.VoiceLogic import get_username, run_tts_script, run_prerequisites_script, run_infer_script, run_preprocess_script, run_extract_script, run_train_script, BASE_DIR
 
 voice_bp = Blueprint('voice', __name__)
+
+@voice_bp.route("/upload-model", methods=["POST"])
+def upload_model():
+
+    file = request.file
+    name = file.get("name")
+
+    SAVE_DIR = os.path.join(BASE_DIR, "assets", "Voice", "Models", f"{name}")
+    os.makedirs(SAVE_DIR, exist_ok=True)
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files["file"]
+    save_path = os.path.join(SAVE_DIR, file.filename)
+    file.save(save_path)
+    
+    return jsonify({"status": "ok", "path": save_path})
 
 @voice_bp.route('/train-voice-model', methods=['POST'])
 def auto_create_rvc_model():
@@ -12,6 +30,7 @@ def auto_create_rvc_model():
 
     form = request.form
     model_name = form.get("model_name")
+    userId = form.get("userId")
     sample_rate = int(form.get("sample_rate", 40000))
     epochs = int(form.get("epochs", 1))
     batch_size = int(form.get("batch_size", 8))
@@ -22,8 +41,11 @@ def auto_create_rvc_model():
     save_only_latest = form.get("save_only_latest", "true").lower() == "true"
     save_every_weights = form.get("save_every_weights", "false").lower() == "true"
 
-    model_folder = os.path.join(BASE_DIR, "assets", "Voice", "Models", model_name)
-    
+    user_name = get_username(userId)
+
+    model_folder = os.path.join(BASE_DIR, "assets", "Voice", "Models", f"{user_name}_{model_name}")
+
+
     if os.path.exists(model_folder):
         pth_file = next((os.path.join(model_folder, f)
                         for f in os.listdir(model_folder) if f.endswith('.pth')), None)
@@ -111,9 +133,19 @@ def generate_voice():
     rate = data.get('rate', 0)
     pitch = data.get('pitch', 0)
     model_name = data.get('model_name', 'Mingyu')
+    userId = data.get('userId')
+    gender = data.get('gender') 
 
-    model_folder = os.path.join(BASE_DIR, "assets", "Voice", "Models", model_name)
-    output_dir = os.path.join(BASE_DIR, "Outputs", "Voice")
+    if gender == '女性':
+        tts_voice="zh-TW-HsiaoYuNeural"
+    else:
+        tts_voice="zh-TW-YunJheNeural"
+
+    user_name = get_username(userId)
+
+    model_folder = os.path.join(BASE_DIR, "assets", "Voice", "Models", f"{user_name}_{model_name}")
+
+    output_dir = os.path.join(BASE_DIR, "outputs", "Voice")
     os.makedirs(output_dir, exist_ok=True)
 
     tts_path = os.path.join(output_dir, 'tts_output.wav')
@@ -131,7 +163,7 @@ def generate_voice():
         run_tts_script(
             tts_text=text,
             #tts_language_code="cmn-TW",
-            tts_voice="zh-TW-YunJheNeural",
+            tts_voice=tts_voice,
             tts_rate=rate,
             pitch=pitch,
             output_tts_path=tts_path,
@@ -167,7 +199,7 @@ def generate_voice():
 
 @voice_bp.route('/get-audio-base64', methods=['GET'])
 def get_audio_base64():
-    audio_path = os.path.join(BASE_DIR, "Outputs", "Voice", "final_output.wav")
+    audio_path = os.path.join(BASE_DIR, "outputs", "Voice", "final_output.wav")
     if os.path.exists(audio_path):
         with open(audio_path, "rb") as f:
             encoded = base64.b64encode(f.read()).decode("utf-8")

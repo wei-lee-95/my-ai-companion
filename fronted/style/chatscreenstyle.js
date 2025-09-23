@@ -174,4 +174,25 @@ replyPreviewText: {
   fontSize: 14,
   color: '#333',
 },
+
+modalbackground: {
+  flex: 1, 
+  justifyContent: 'center', 
+  alignItems: 'center', 
+  backgroundColor: '#00000099',
+},
+
+modalinfo: {
+  backgroundColor: '#fff', 
+  padding: 20, 
+  borderRadius: 10,
+  width: '70%',
+},
+
+modaltitle: {
+  fontSize: 16, 
+  fontWeight: 'bold', 
+  marginBottom: 10,
+},
+
 });

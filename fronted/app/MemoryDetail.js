@@ -17,87 +17,164 @@ import { Picker } from '@react-native-picker/picker';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { BASE_URL, API_ENDPOINTS } from '../../fronted/apiConfig';
 
 export default function MemoryDetail() {
-  useFocusEffect(
-    React.useCallback(() => {
-      const onBackPress = () => {
-        if (showTimePeriodMenu) {
-          setShowTimePeriodMenu(false);
-          return true; // 攔截返回
-        }
-        if (showHourMenu) {
-          setShowHourMenu(false);
-          return true;
-        }
-        if (modalVisible) {
-          setModalVisible(false);
-          return true;
-        }
-        return false; // 沒有 modal 開啟，繼續原本的返回
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      return () => subscription.remove(); // 清除監聽
-    }, [showTimePeriodMenu, showHourMenu, modalVisible])
-  );
-
+  
   const navigation = useNavigation();
   const route = useRoute();
   const params = route?.params ?? {};
-  const { title, icon, event, fromChat } = params;
+  const { 
+    category_title, 
+    icon, 
+    fromChat,
+    memory_id, 
+    pre_mood, 
+    pre_location, 
+    pre_time_of_day ,
+    chatContent,
+    memory_title,
+    date,
+    characterId,   // ← 你缺少這兩個
+    userId,
+    name
+  } = params;
 
-  const [eventTitle, setEventTitle] = useState(event?.event ?? '');
-  const [timePeriod, setTimePeriod] = useState(event?.timePeriod ?? '中午');
-  const [hour, setHour] = useState(event?.hour ?? '12');
-  const [place, setPlace] = useState(event?.place ?? '');
-  const [mood, setMood] = useState(event?.mood ?? '');
+  const [memoryTitle, setMemoryTitle] = useState(memory_title);
+  const [editedMemoryTitle, setEditedMemoryTitle] = useState(memory_title);
+
+  const [timePeriod, setTimePeriod] = useState('上午');
+  const [editedTimePeriod, setEditedTimePeriod] = useState('中午');
+
+  const [hour, setHour] = useState('12');
+  const [editedHour, setEditedHour] = useState('12');
+
+  const [place, setPlace] = useState(pre_location);
+  const [editedPlace, setEditedPlace] = useState(pre_location);
+
+  const [mood, setMood] = useState(pre_mood);
+  const [editedMood, setEditedMood] = useState(pre_mood);
+
+  const [content, setContent] = useState(chatContent);
+
   const [showTimePeriodMenu, setShowTimePeriodMenu] = useState(false);
   const [showHourMenu, setShowHourMenu] = useState(false);
-
   const [modalVisible, setModalVisible] = useState(false);
-
-  const [editedEventTitle, setEditedEventTitle] = useState(eventTitle);
-  const [editedTimePeriod, setEditedTimePeriod] = useState(timePeriod);
-  const [editedHour, setEditedHour] = useState(hour);
-  const [editedPlace, setEditedPlace] = useState(place);
-  const [editedMood, setEditedMood] = useState(mood);
-
-  const fullTime = event?.time ? new Date(event?.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [sound, setSound] = useState(null);
   const [playing, setPlaying] = useState(false);
+
+  const fullTime = `${timePeriod} ${hour}點`;
   
+  console.log(category_title, icon, fromChat, memory_id, pre_mood, pre_location, pre_time_of_day, chatContent, memory_title,)
+
+  // --- 撈資料用的 useEffect ---
   useEffect(() => {
-    if (event?.time) {
-      const date = new Date(event.time);
-      let h = date.getHours(); // 0~23
-      const period = h >= 12 ? '下午' : '上午';
-      h = h % 12;
-      if (h === 0) h = 12; // 把 0 改為 12 點
-
-      setTimePeriod(period);
-      setHour(h.toString());
-      setEditedTimePeriod(period);
-      setEditedHour(h.toString());
+    // 只有不是 fromChat，且有 memory_id 才呼叫 API 取得完整資料
+    if (fromChat) {
+      // 從聊天頁來的，直接用 route 參數的資料
+      // 但如果有 pre_time_of_day，轉上午下午時間
+      if (pre_time_of_day) {
+        const { period, h } = convertTimeOfDay(pre_time_of_day);
+        setTimePeriod(period);
+        setEditedTimePeriod(period);
+        setHour(h.toString());
+        setEditedHour(h.toString());
+      }
+      return;
     }
-  }, []);
 
-  const handleDelete = () => {
+    if (!memory_id) {
+      console.warn('MemoryDetail: 缺少 memory_id，無法取得詳細資料');
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_ENDPOINTS.GET_SINGLE_MEMORY}?memory_id=${memory_id}`);
+        if (!res.ok) {
+          console.error('後端回傳錯誤', res.status);
+          return;
+        }
+        const json = await res.json();
+        if (json.error) {
+          console.error('後端錯誤訊息', json.error);
+          return;
+        }
+        const mem = json.memory;
+        if (!mem) {
+          console.warn('找不到回憶資料');
+          return;
+        }
+
+        // 設定狀態
+        setMemoryTitle(mem.title || '');
+        setEditedMemoryTitle(mem.title || '');
+
+        setPlace(mem.location || '');
+        setEditedPlace(mem.location || '');
+
+        setMood(mem.mood || '');
+        setEditedMood(mem.mood || '');
+
+        setContent(mem.content || '');
+        console.log("將",mem.content,"存入")
+
+        if (mem.time_of_day) {
+          const { period, h } = convertTimeOfDay(mem.time_of_day);
+          setTimePeriod(period);
+          setEditedTimePeriod(period);
+          setHour(h.toString());
+          setEditedHour(h.toString());
+        }
+      } catch (err) {
+        console.error('讀取單項回憶失敗:', err);
+      }
+    })();
+  }, [fromChat, memory_id]);
+
+  // time_of_day (24小時字串) 轉 上午/下午 與 12小時制小時數
+  function convertTimeOfDay(timeStr) {
+    let h = parseInt(timeStr, 10);
+    const period = h >= 12 ? '下午' : '上午';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return { period, h };
+  }
+
+
+  const handleDelete = async () => {
     setConfirmDeleteVisible(false);
 
-    if (fromChat) {
-      navigation.goBack();
-    } else if (event?.key) {
-      navigation.navigate({
-        name: 'MemoryList',
-        params: {
-          deleteKey: event.key,
-        },
-        merge: true,
+    try {
+      const res = await fetch(`${API_ENDPOINTS.DELETE_MEMORY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memory_id: memory_id }), // 你有帶 memory_id
       });
+
+      const json = await res.json();
+
+      if (res.ok && json.status === 'success') {
+        Alert.alert('成功', '刪除成功', [
+          {
+            text: '確定',
+            onPress: () => {
+              if (fromChat) {
+                navigation.goBack();
+              } else {
+                navigation.goBack();
+              }
+            },
+          },
+        ]);
+      } else {
+        alert('刪除失敗，請稍後再試');
+      }
+    } catch (error) {
+      console.error('刪除錯誤:', error);
+      alert('刪除失敗，請檢查網路');
     }
   };
 
@@ -116,7 +193,7 @@ export default function MemoryDetail() {
       setPlaying(true);
       await newSound.playAsync();
 
-      newSound.setOnPlaybackStatusUpdate((status) => {
+      newSound.han((status) => {
         if (!status.isLoaded) return;
         if (status.didJustFinish) {
           setPlaying(false);
@@ -128,18 +205,45 @@ export default function MemoryDetail() {
     }
   };
 
-  const handleSave = () => {
-    setEventTitle(editedEventTitle);
-    setTimePeriod(editedTimePeriod);
-    setHour(editedHour);
-    setPlace(editedPlace);
-    setMood(editedMood);
-    setModalVisible(false);
+  const handleSave = async () => {
+    try {
+      const res = await fetch(`${API_ENDPOINTS.UPDATE_MEMORY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          memory_id: memory_id, // 從 params 傳來的記憶 ID
+          new_title: editedMemoryTitle,
+          new_location: editedPlace,
+          new_time: editedTimePeriod === '上午' ? editedHour : (parseInt(editedHour) + 12).toString(),  // 簡單把下午換成24小時制
+          new_mood: editedMood,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.ok && json.status === 'success') {
+        // API 更新成功後，更新本地狀態
+        setMemoryTitle(editedMemoryTitle);
+        setTimePeriod(editedTimePeriod);
+        setHour(editedHour);
+        setPlace(editedPlace);
+        setMood(editedMood);
+        setModalVisible(false);
+        alert('記憶更新成功');
+      } else {
+        alert('更新失敗，請稍後再試');
+      }
+    } catch (error) {
+      console.error('更新錯誤:', error);
+      alert('更新失敗，請檢查網路連線');
+    }
   };
 
   const handleBack = () => {
     if (fromChat) {
-      navigation.navigate('ChatScreen');
+      navigation.goBack();
     } else {
       navigation.goBack();
     }
@@ -166,26 +270,22 @@ export default function MemoryDetail() {
           <Text style={styles.backButtonText}>≪</Text>
         </TouchableOpacity>
 
-        <Text style={styles.absoluteTitle}>{title}</Text>
-
         <View style={styles.backButtonPlaceholder} />
       </View>
-
+      
+      <Text style={styles.date}>{category_title}</Text>
       <Text style={styles.icon}>{icon}</Text>
-      <Text style={styles.date}>{event?.date}</Text>
-      <Text style={styles.event}>{eventTitle}</Text>
-        {/* GPT 生成的標題（若有） */}
-        {event?.title && (
-          <Text style={styles.generatedTitle}>{event.title}</Text>
-        )}
+      <Text style={styles.date}>{date}</Text>
+      <Text style={styles.event}>{memoryTitle}</Text>
+
 
     <View style={styles.chatContainer}>
-      {event?.chatContent?.imageUri ? (
-        <Image source={{ uri: event?.chatContent.imageUri }} style={{ width: 200, height: 200, borderRadius: 10 }} />
-      ) : event?.chatContent?.audioUri ? (
+      {content?.imageUri ? (
+        <Image source={{ uri: content.imageUri }} style={{ width: 200, height: 200, borderRadius: 10 }} />
+      ) : content?.audioUri ? (
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center' }}
-          onPress={() => playAudio(event?.chatContent.audioUri)}
+          onPress={() => playAudio(chatContent.audioUri)}
         >
           <Ionicons
             name={playing ? 'pause-circle' : 'play-circle'}
@@ -195,7 +295,7 @@ export default function MemoryDetail() {
           <Ionicons name="pulse" size={24} color="#555" style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       ) : (
-        <Text>{event?.chatContent?.text || '（無內容）'}</Text>
+        <Text>{content?.text || content || '（無內容）'}</Text>
       )}
       <View style={styles.triangleShadow} />
       <View style={styles.triangle} />
@@ -245,8 +345,8 @@ export default function MemoryDetail() {
             <TextInput
               style={styles.input}
               placeholder="事件"
-              value={editedEventTitle}
-              onChangeText={setEditedEventTitle}
+              value={editedMemoryTitle}
+              onChangeText={setEditedMemoryTitle}
             />
 
             <View style={styles.dropdownRow}>
@@ -344,16 +444,15 @@ export default function MemoryDetail() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: '#efe2d8' },
-  absoluteTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 18,
-  },
   icon: { fontSize: 40, textAlign: 'center', marginTop: 5 },
   date: { fontSize: 16, textAlign: 'center', marginTop: 5 },
-  event: { fontSize: 20, textAlign: 'center', marginTop: 5, marginBottom: 20 },
+  event: { 
+    fontSize: 20, 
+    textAlign: 'center', 
+    marginTop: 10, 
+    marginBottom: 20,
+    fontWeight: 'bold',
+  },
   chatContainer: {
     backgroundColor: '#eee',
     borderRadius: 8,
@@ -480,6 +579,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 6,
     elevation: 3,
+    zIndex: 10,
   },
   backButtonText: {
     fontSize: 18,

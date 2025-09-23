@@ -1,15 +1,21 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { API_ENDPOINTS } from '../../fronted/apiConfig';  // 請確認路徑
+
 
 export default function MemoryList() {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const { title = '', icon = '', data = [] } = route.params || {};
-  const [originalData] = useState([...data]); 
-  const [localData, setLocalData] = useState([...data].sort((a, b) => (b.time || 0) - (a.time || 0)));
+  const { category_title, category_icon, character_id, category_id} = route.params || {};
+  const [memories, setMemories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  //const [originalData] = useState([...data]); 
+  //const [localData, setLocalData] = useState([...data].sort((a, b) => (b.time || 0) - (a.time || 0)));
+
+  /*
   useFocusEffect(
     useCallback(() => {
       const deleteKey = route.params?.deleteKey;
@@ -19,6 +25,33 @@ export default function MemoryList() {
         navigation.setParams({ deleteKey: null }); // ✅ 清掉以免重複刪除
       }
     }, [route.params?.deleteKey])
+  );*/
+
+  const fetchMemories = useCallback(async () => {
+    if (!character_id || !category_id) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINTS.GET_MEMORY_DETAIL}?character_id=${character_id}&category_id=${category_id}`);
+      const json = await res.json();
+      if (json.memories && Array.isArray(json.memories)) {
+        setMemories(json.memories);
+      } else {
+        setMemories([]);
+      }
+    } catch (err) {
+      console.error('取得記憶詳情失敗', err);
+      setMemories([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [character_id, category_id]);
+
+  // 每次畫面 focus 時重新抓資料
+  useFocusEffect(
+    useCallback(() => {
+      fetchMemories();
+    }, [fetchMemories])
   );
 
   return (
@@ -30,7 +63,7 @@ export default function MemoryList() {
         </TouchableOpacity>
 
         <View style={styles.titleWrapper}>
-          <Text style={styles.pageTitle}>{icon} {title}</Text>
+          <Text style={styles.pageTitle}>{category_icon} {category_title}</Text>
         </View>
 
         <View style={styles.backButtonPlaceholder} />
@@ -39,24 +72,25 @@ export default function MemoryList() {
       {/* 🔸列表 */}
       <View style={styles.listContainer}>
         <FlatList
-          data={localData}
+          data={memories}
+          keyExtractor={(item) => item.memory_id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
                 navigation.navigate('MemoryDetail', {
-                  title,
-                  icon,
-                  event: item,
+                  category_title:category_title,
+                  icon:category_icon,
+                  date: item.date,
+                  memory_id: item.memory_id,
                 });
               }}
             >
               <View style={styles.itemRow}>
-                <Text style={styles.eventText}>{item.event}</Text>
+                <Text style={styles.eventText}>{item.memory_title}</Text>
                 <Text style={styles.dateText}>{item.date}</Text>
               </View>
             </TouchableOpacity>
           )}
-          keyExtractor={(item) => item.key.toString()}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       </View>

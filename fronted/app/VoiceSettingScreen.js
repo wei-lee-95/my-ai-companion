@@ -16,7 +16,7 @@ import * as FileSystem from 'expo-file-system';
 
 export default function VoiceSettingScreen() {
   const route = useRoute();
-  const {name} = route.params || {};
+  const {gender, relationship, name, userId, clothingStyle } = route.params || {};
   const [pitch, setPitch] = useState(0);
   const [speed, setSpeed] = useState(0);
   const [isUploaded, setIsUploaded] = useState(false);
@@ -26,6 +26,8 @@ export default function VoiceSettingScreen() {
   const [sound, setSound] = useState(null);
   const navigation = useNavigation();
   const [generatedBase64, setGeneratedBase64] = useState(null);
+  const [generated, setGenerated] = useState(false); //for test
+
 
   // ✅ 初始化音訊模式（for iOS 靜音）
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function VoiceSettingScreen() {
       formData.append('rate', speed);
       formData.append('pitch', pitch);
       formData.append('model_name', name);
+      formData.append('userId', userId);
 
       const response = await fetch(API_ENDPOINTS.TRAIN_VOICE, {
         method: 'POST',
@@ -73,15 +76,17 @@ export default function VoiceSettingScreen() {
             rate: speed,
             pitch: pitch,
             model_name: name,
+            userId: userId,
+            gender: gender
           })
         });
         const generateResult = await generateRes.json();
         console.log('生成語音成功：', generateResult);
-        setLoading(false);
         if (generateResult.audio_base64) {
           setGeneratedBase64(generateResult.audio_base64);
           alert('語音生成完成，開始播放...');
           await handlePlay(generateResult.audio_base64);  // 播放生成音檔
+          setLoading(false);
         } else {
           alert('生成音檔失敗，無法播放');
         }
@@ -92,9 +97,32 @@ export default function VoiceSettingScreen() {
     }
   };
 
+  // for test
+  // const handleGenerate = () => {
+  //   if (!isUploaded) {
+  //     alert('請先上傳音檔');
+  //     return;
+  //   }
+  //   setGenerated(true);
+  //   alert('語音生成完成，請點擊播放試聽');
+  // };
+
+
   const handleConfirm = () => {
-    navigation.goBack();
+    navigation.navigate({
+      name: 'CreateCharacter',
+      params: {
+      gender,
+      relationship,
+      name,
+      userId,
+      clothingStyle,
+      pitch,
+      speed,
+      },
+    });
   };
+
 
   // ✅ 播放按鈕（從後端取 base64 播放）
   const handlePlay = async (base64Audio) => {
@@ -168,16 +196,8 @@ export default function VoiceSettingScreen() {
 
       <View style={styles.cardBox}>
         <Text style={styles.cardTitle}>最終聲音確認 & 調整</Text>
-        <TouchableOpacity
-          onPress={() => {
-            if (generatedBase64) {
-              handlePlay(generatedBase64);
-            } else {
-              alert('請先生成語音');
-            }
-          }}
-          style={styles.finalRow}
-        >
+        <TouchableOpacity onPress={() => handlePlay(generatedBase64)} style={styles.finalRow}>
+
           <Ionicons name="play" size={24} color="black" />
           <Text style={{ marginLeft: 10 }}>🎵 播放語音</Text>
         </TouchableOpacity>
