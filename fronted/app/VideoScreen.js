@@ -4,7 +4,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Vibration, SafeAreaVie
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Video } from 'expo-av';
 import { useRoute} from '@react-navigation/native';
@@ -50,6 +50,7 @@ useEffect(() => {
 
       const json = await res.json();
       const videoBase64 = json.video_base64;
+      console.log('收到的 base64 長度:', videoBase64 ? videoBase64.length : 0);
       if (!videoBase64) return;
 
       const videoFileUri = await saveVideoBase64ToFile(videoBase64);
@@ -85,9 +86,24 @@ useEffect(() => {
 
   // 儲存 base64 影片檔案
   const saveVideoBase64ToFile = async (base64) => {
-    const fileUri = FileSystem.cacheDirectory + 'generated_video_${Date.now()}.mp4';
-    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
-    return fileUri;
+    try {
+      console.log('開始儲存影片，base64 長度:', base64.length);
+      
+      const filename = `generated_video_${Date.now()}.mp4`;
+      const fileUri = FileSystem.cacheDirectory + filename;
+      console.log('完整檔案路徑:', fileUri);
+      
+      // 直接使用字串 'base64' 而不是 FileSystem.EncodingType.Base64
+      await FileSystem.writeAsStringAsync(fileUri, base64, { 
+        encoding: 'base64'
+      });
+      
+      console.log('影片儲存成功:', fileUri);
+      return fileUri;
+    } catch (error) {
+      console.error('saveVideoBase64ToFile 錯誤:', error);
+      throw error;
+    }
   };
 
   // --- 錄音循環：沿用原本流程 ---

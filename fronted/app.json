@@ -1,6 +1,6 @@
 {
   "expo": {
-    "entryPoint": "./App.js",
+    
     "name": "my-ai-companion",
     "slug": "my-ai-companion",
     "version": "1.0.0",
