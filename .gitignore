@@ -3,3 +3,14 @@ __pycache__/
 *.pyo
 *.wav
 .DS_Store
+
+# 忽略所有 RVC 相關的模型權重檔
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# 忽略特定資料夾
+backend/rvc/models/
+backend/assets/Voice/Models/
+backend/external/Applio/

@@ -10,7 +10,7 @@ export default function useMicAutoRecorder(onFinish) {
   const minRecordTime = 2.0;  // 最短錄音秒數
   let recordTime = 0;
 
-  const threshold = -30; // dB：你可以調整，越小越敏感（-60 ~ -30）
+  const threshold = -8; // dB：你可以調整，越小越敏感（-60 ~ -30）
 
   const cleanup = async () => {
   if (volumeCheckInterval.current) {
