@@ -13,7 +13,7 @@ EXPRESSION_CONFIGS = {
     # "中立" 不需 API
 }
 
-API_KEY = "SG_079a630w20252046eeeeeee7848w21"
+API_KEY = ""
 API_URL = "https://api.segmind.com/v1/expression-editor"
 HEADERS = {'x-api-key': API_KEY}
 

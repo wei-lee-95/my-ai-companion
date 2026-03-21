@@ -24,7 +24,7 @@ from database.database import character_model, chat_model, user_model, vedio_mod
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 os.makedirs(HISTORY_DIR, exist_ok=True)  # ✅ 確保資料夾存在
-client = openai.OpenAI(api_key="sk-proj-MG2muN_vvbcYdrsz-zcYRkn48QNq9xdBoTNZYi-iGUPNmuwhinViL5V3WK1GcpgSuTgBWB2Ix1Ag-CW8T3BlbkFJU041ef8F-se9Y8l3WXNyBFCqanlD_lpaLHtt4ji_VXUU0T05WLBsM4FTJtRpfaCNI2aPgVYocA") 
+client = openai.OpenAI(api_key="") 
 
 def get_pitch_and_rate(character_id: int) -> Optional[dict]:
     """取出特定角色的性別"""

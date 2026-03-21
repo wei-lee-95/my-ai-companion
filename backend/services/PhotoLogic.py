@@ -3,7 +3,7 @@ import openai
 from database.database import character_model
 import os
 
-openai.api_key = "sk-proj-MG2muN_vvbcYdrseeeeeeez-zcQNq9xdBwqrreeoTNZYi-iGUPNmuwhinViL5try224V3WK1GcpgSuTgBWB2Ix1Ag-CW8T3BlbkFJU041ef8F-se9Y8l3WXNyBFCqanlD_lpaLHtt4ji_VXUU0T05WLBsM4FTJtRpfaCNI2aPgVYocA"
+openai.api_key = ""
 
 # backend 資料夾
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
