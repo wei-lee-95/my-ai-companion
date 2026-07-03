@@ -11,10 +11,11 @@ from services.VideoLogic import process_chat_response, initialize_resources, pro
 from database.database import character_model, chat_model
 from services.VoiceLogic import get_username, run_tts_script
 from services.ChatLogic import  get_db_stats
+from config import OPENAI_API_KEY
 
 
-# 初始化 OpenAI client（填入你的 API 金鑰）
-client = openai.OpenAI(api_key="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")  # ✅ 替換為你的金鑰
+# 初始化 OpenAI client
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 model = whisper.load_model("small") 
 video_bp = Blueprint('video', __name__)
 

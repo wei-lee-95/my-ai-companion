@@ -13,7 +13,7 @@ def setting_profile():
     password = data.get('password')
     age = data.get('age')
     user_id = data.get('userId')
-    print(f"這是SettingApi中的email={email}, password={password}, user_id={user_id}")
+    print(f"這是SettingApi中的email={email}, user_id={user_id}")
 
     # 確保每個欄位都有值，且非空字串，年齡是合法整數
     if not all([email, password, age]):

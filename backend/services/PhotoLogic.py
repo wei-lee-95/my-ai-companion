@@ -2,8 +2,9 @@ import base64
 import openai
 from database.database import character_model
 import os
+from config import OPENAI_API_KEY
 
-openai.api_key = ""
+openai.api_key = OPENAI_API_KEY
 
 # backend 資料夾
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

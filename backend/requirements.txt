@@ -1,0 +1,16 @@
+flask
+flask-cors
+openai
+python-dotenv
+requests
+werkzeug
+pillow
+numpy
+opencv-python
+rembg
+playsound
+ultralytics
+cvzone
+SpeechRecognition
+openai-whisper
+torch

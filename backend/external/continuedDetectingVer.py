@@ -12,6 +12,8 @@ import threading
 import time
 import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from config import OPENAI_DETECTING_API_KEY
 import traceback
 from ChatScreen_BackEnd.aihuman import chat
 
@@ -293,7 +295,7 @@ if __name__ == "__main__":
     from Applio.simple_rvc import auto_tts_rvc
     
     # 初始化 OpenAI API
-    client = openai.OpenAI(api_key="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")
+    client = openai.OpenAI(api_key=OPENAI_DETECTING_API_KEY)
     
     # 角色設定
     system_prompt_template = """

@@ -10,12 +10,13 @@ import whisper
 import logging
 from typing import Dict, Any, List, Optional
 from database.database import character_model, chat_model
+from config import OPENAI_API_KEY
 
 # 載入 Whisper 模型
 model = whisper.load_model("small")  # 你可以換成 tiny, base, small, medium, large  # ✅medium效果最好 但在本地端要跑很久 需要GPU比較快
 
-# 初始化 OpenAI client（填入你的 API 金鑰）
-client = openai.OpenAI(api_key="")  # ✅ 替換為你的金鑰
+# 初始化 OpenAI client
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # 絕對路徑建立 chat_histories 資料夾
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -300,5 +301,4 @@ def gpt4o_image_caption(image_base64):
 def replace_message(message_id, ooc_text):
     updated_rows = chat_model.update_message(ooc_text, message_id)
     return updated_rows
-
 

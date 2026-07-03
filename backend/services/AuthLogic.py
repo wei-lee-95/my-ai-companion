@@ -2,10 +2,17 @@
 # ai-companion --> table --> users
 
 import hashlib
+from werkzeug.security import check_password_hash, generate_password_hash
 from database.database import user_model,db_manager
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    return generate_password_hash(password)
+
+def verify_password(stored_hash: str, password: str) -> bool:
+    # Backward compatible with older SHA256-only rows in local/dev databases.
+    if stored_hash == hashlib.sha256(password.encode()).hexdigest():
+        return True
+    return check_password_hash(stored_hash, password)
 
 def register_user(email: str, password: str, username: str, age: int):
     if user_model.get_user_by_email(email):
@@ -24,11 +31,6 @@ def login_user(email: str, password: str):
         return None, "帳號錯誤"
 
     db_pw = user['password_hash']
-    input_pw = hash_password(password)
-
-    print(f"[DEBUG] 資料庫密碼雜湊：'{db_pw}'")
-    print(f"[DEBUG] 輸入密碼雜湊：'{input_pw}'")
-    print(f"[DEBUG] type(db_pw): {type(db_pw)}, type(input_pw): {type(input_pw)}")
 
     # 強制轉字串並去除空白
     #db_pw_str = str(db_pw).strip()
@@ -36,7 +38,7 @@ def login_user(email: str, password: str):
 
     #print(f"[DEBUG] 去除空白後比較：{db_pw_str == input_pw_str}")
 
-    if db_pw != input_pw:
+    if not verify_password(db_pw, password):
         print("[DEBUG] 密碼不匹配，登入失敗")
         return None, "密碼錯誤"
 
@@ -45,7 +47,7 @@ def login_user(email: str, password: str):
     return user, None
 
 def change_profile(user_id: int, email: str, password: str,age: int):
-    print(f"這是AuthLogic中的email={email}, password={password}, user_id={user_id}")
+    print(f"這是AuthLogic中的email={email}, user_id={user_id}")
     existing_user = user_model.get_user_by_email(email)
     if existing_user and existing_user["id"] != user_id:
         return None, "Email 已被註冊"

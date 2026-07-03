@@ -3,6 +3,7 @@ import json
 import os
 import time
 import openai
+from config import OPENAI_API_KEY
 from services.MemoryLogic import get_character_memory_category, generate_title, generate_memory_detail, get_time_of_day_by_message_id, add_memory_detail, update_memory_details, delete_memory_db, get_single_memories_by_id, add_new_memory_category, get_single_memory
 
 memory_bp = Blueprint('memory', __name__)
@@ -11,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 MEMORY_DIR = os.path.join(BASE_DIR, 'assets', 'Memory')
 HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 
-client = openai.OpenAI(api_key="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") 
+client = openai.OpenAI(api_key=OPENAI_API_KEY) 
 
 
 @memory_bp.route("/get-memory-categories", methods=["GET"])
@@ -223,5 +224,4 @@ def get_single_memory_api():
     except Exception as e:
         print("提取單項回憶失敗:", str(e))
         return jsonify({"status": "fail", "error": str(e)}), 500
-
 

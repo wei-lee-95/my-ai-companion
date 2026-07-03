@@ -2,13 +2,14 @@ from flask import Blueprint, Flask, Response, request, jsonify # 用flask來做�
 import os, base64
 import openai
 import requests
+from config import OPENAI_API_KEY
 from services.PhotoLogic import image_to_data_url, get_character_appearance
 
 photo_bp = Blueprint('photo', __name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-openai.api_key = "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"
+openai.api_key = OPENAI_API_KEY
 
 @photo_bp.route("/generate", methods=["POST"])
 def generate():

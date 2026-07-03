@@ -18,13 +18,14 @@ from flask import jsonify
 from services.ChatLogic import get_character_info, get_character_personalities_info, get_db_stats, save_db_stats, save_chat_histories, generate_prompt, extract_reply_text, parse_stats, get_chat_histories_by_sessions, generate_prompt_old
 from typing import Dict, Any, List, Optional
 from database.database import character_model, chat_model, user_model, vedio_model
+from config import OPENAI_API_KEY
     
 
 # 宣告全域變數
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HISTORY_DIR = os.path.join(BASE_DIR, "assets", "Chat", "chat_histories")
 os.makedirs(HISTORY_DIR, exist_ok=True)  # ✅ 確保資料夾存在
-client = openai.OpenAI(api_key="") 
+client = openai.OpenAI(api_key=OPENAI_API_KEY) 
 
 def get_pitch_and_rate(character_id: int) -> Optional[dict]:
     """取出特定角色的性別"""

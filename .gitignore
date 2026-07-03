@@ -2,7 +2,23 @@ __pycache__/
 *.pyc
 *.pyo
 *.wav
+*.mp3
+*.m4a
+*.mp4
 .DS_Store
+.env
+backend/.env
+._*
+
+# Local databases and generated/runtime data
+*.db
+backend/assets/Chat/chat_histories/
+backend/assets/Photo/
+backend/outputs/
+backend/logs/
+
+# Local model/checkpoint artifacts
+*.pkl
 
 # 忽略所有 RVC 相關的模型權重檔
 *.pt

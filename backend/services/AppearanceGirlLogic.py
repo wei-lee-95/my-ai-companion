@@ -10,8 +10,9 @@ from PIL import Image
 from rembg import remove
 from database.database import user_model
 from typing import Optional
+from config import STABLE_DIFFUSION_WEBUI_URL
 
-webui_server_url = "http://192.168.0.131:7860"  #通常是7860
+webui_server_url = STABLE_DIFFUSION_WEBUI_URL
 
 openpose_image_path = './assets/Appearance/openpose.png'
 

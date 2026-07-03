@@ -4,6 +4,7 @@ import os
 import shutil
 import time
 from rembg import remove
+from config import SEGMIND_API_KEY
 
 EXPRESSION_CONFIGS = {
     "開心": {"aaa": -10, "blink": 0, "eee": 0, "eyebrow": 0, "smile": 1.3, "woo": 0},
@@ -13,7 +14,7 @@ EXPRESSION_CONFIGS = {
     # "中立" 不需 API
 }
 
-API_KEY = ""
+API_KEY = SEGMIND_API_KEY
 API_URL = "https://api.segmind.com/v1/expression-editor"
 HEADERS = {'x-api-key': API_KEY}
 
@@ -87,4 +88,3 @@ def generate_emotions(user_name, character_name):
         if i < len(emotion_keys) - 1:
             print("⏳ 等待 12 秒再送下一張...")
             time.sleep(12)
-
